@@ -1,0 +1,98 @@
+#!/usr/bin/perl -w
+
+use vars qw($cwdir);
+use vars qw($BIN_DIR $CONFIG_DIR $DATA_DIR);
+
+BEGIN {
+	use File::Basename;
+	$cwdir = dirname($0);
+	unshift (@INC, $cwdir.'/../lib');
+}
+
+$BIN_DIR = "$cwdir/../bin";
+$CONFIG_DIR = "$cwdir/../conf";
+$DATA_DIR = "$cwdir/../conf/data";
+
+use Sys::Hostname;
+use Getopt::Long;
+use Common;
+use Mailiter;
+use Clearcase;
+use Task;
+
+#load Env variables
+eval  {
+  require "$CONFIG_DIR/site.cfg";
+};
+if ($@) {
+	fatal( "Error: Site Config File eval error. Contact your SCM admim." );
+	exit(2);
+};
+
+(&isScmDebug()) && debug("start BMC....");
+
+# Log
+our $scmFatalPrefix = 'SCM Fatal Error';
+our $scmErrorPrefix = 'SCM Error';
+our $scmWarnPrefix = 'SCM Warn';
+our $scmInfoPrefix = 'SCM Info';
+our $scmDebugPrefix = 'SCM Debug';
+
+# BMC Env Vars
+our $bmcAtomicSteps = 'ATOMIC.step';
+our $bmcCompositeSteps = 'COMPOSITE.step';
+
+our $cronDir = "$ENV{HOME}/cron";
+our $login = getlogin || `id -un` || "Intruder";
+our $host = hostname;
+
+#parse input arguments
+#&parseOptions(@ARGV);
+
+my $status = 0;
+eval {
+	&iRun("wmx4.0-capc", "sBuild");
+};
+if ($@) {
+  print "$@";
+  $status = 1;
+}
+
+(&isScmDebug()) && debug("end BMC....");
+exit $status;
+
+sub parseOptions
+{
+	my (@args) = @_;
+	my %opts = ();
+	my $argsize = @args;
+	my $rc = GetOptions(\%opts, "-help", 
+					   "-product_family|pfamily=s",
+					   "-vobfamily|vfamily=s","-cr=s", 
+					   "-baseline|b=s"
+			   );
+
+	## Print usage if requested
+	if ((exists($opts{help}) && $opts{help}) ||($argsize==0)) {
+	  &displayHelp($0);
+	  exit(0);
+	}
+
+	unless ($rc) {
+	  error( "Incorrect command-line option-syntax!\nUse the -help to see invocation syntax.");
+	  exit(2);
+	}
+	return %opts;
+}
+
+sub displayHelp
+{
+	print <<EOF
+scm [-v.obfamily VOBFAMILY] [-devproject PROJECT]
+	{ -cr CR-ID | -br BRTYPE-NAME | -tag VIEW_TAG } 
+	[ -r.elease system-release | -b.aseline baseline ] 
+	[-nobr] [-share_vw] [-share_br] 
+EOF
+}
+
+

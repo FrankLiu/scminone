@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import logging
+import logging.config
+from optparse import OptionParser
+
+BMC_VERSION="BMC-2.0.1"
+def current_path():
+	return os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+def append_sys_path(path):
+  """Fix the sys.path to include our paths."""
+  sys.path.insert(0, path)
+  
+#append lib path
+curdir=current_path()
+BMC_HOME=curdir+"/.."
+os.environ['BMC_HOME'] = BMC_HOME
+append_sys_path(BMC_HOME+'/lib')
+import bmcapi as bmc
+import executor
+import clearcase
+
+logging.config.fileConfig(BMC_HOME+"/conf/logging.conf")
+logger = logging.getLogger("bmc")
+def load_env(_globals):
+	logger.info("Load bmc configuration...")
+	execfile(BMC_HOME+"/conf/bmc.conf", _globals)
+	logger.info("="*60)
+	logger.info("CMBP: ".rjust(15) + _globals['CMBP_HOME'])
+	logger.info("WUCE: ".rjust(15) + _globals['WUCE_HOME'])
+	logger.info("CLEARTOOL: ".rjust(15) + _globals['cleartool'])
+	logger.info("myquota: ".rjust(15) + _globals['myquota'])
+	logger.info("="*60)
+	
+def parse_args():
+	usage = "usage: %prog [options] arg1 arg2"
+	parser = OptionParser(usage=usage)
+	parser.add_option("-i", "--instance", dest="instance", help="configuration instance name")
+	parser.add_option("-s", "--step", dest="step", help="given the step name", default="noUse")
+	parser.add_option("-v","--view", dest="view", help="given the view name", default="noUse")
+	parser.add_option("-m", "--mode", dest="mode", help="given the build mode", default="noUse")
+	#parser.add_option("-b", "--version", default="" help="show bmc version")
+	(options, args) = parser.parse_args()
+	if getattr(options, 'instance') == None:
+		parser.error("Instance not provider!")
+	return (options, args)
+
+
+def check_python_version():
+	if not hasattr(sys, 'version_info'):
+		sys.stderr.write('Very old versions of Python are not supported. Please '
+					   'use version 2.6 or greater.\n')
+		sys.exit(1)
+	version_tuple = tuple(sys.version_info[:2])
+	if version_tuple < (2, 4):
+		sys.stderr.write('Error: Python %d.%d is not supported. Please use '
+					   'version 2.6 or greater.\n' % version_tuple)
+		sys.exit(1)
+	if version_tuple == (2, 4):
+		sys.stderr.write('Warning: Python 2.4 is not supported; this program may '
+					   'break. Please use version 2.6 or greater.\n')
+
+def show_bmc_version():
+	print("***************************".center(100))
+	print(("*"+" "*8+BMC_VERSION+" "*8+"*").center(100))
+	print(("*"+" "*4+"Author: Frank Liu"+" "*4+"*").center(100))
+	print("***************************".center(100))
+	
+def main():
+	logger.info("BMC Start")
+	logger.info("Arguments: %s " %sys.argv)
+	(options, args) = parse_args()
+	insname = getattr(options, 'instance')
+	logger.info("instance: %s" % insname)
+	load_env(bmc.config)
+	instance = bmc.XmlLoader(insname).getInstance()
+	e = executor.Executor(instance)
+	e.runStep("testls")
+	e.runTask("cCheckView", "cwnj74_wimax_cosim")
+	e.runCleartool("lsview  -s cwnj74_wimax_cosim", tail="-1")
+	clearcase.getBuildVersion("cwnj74_wimax_cosim")
+	logger.info("BMC End")
+
+if __name__ == "__main__":
+	show_bmc_version()
+	check_python_version()
+	main()
+	
+    

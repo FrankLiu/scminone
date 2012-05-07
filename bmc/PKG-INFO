@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: bmc
+Version: 0.1
+Summary: bmc: baseline management command-line tool
+Home-page:  http://bmc.org/
+Author: Frank Liu
+Author-email: frank.1.liu@nsn.com
+License: Private domain
+Description: Think about the ideal way to SCM work.
+Platform: any

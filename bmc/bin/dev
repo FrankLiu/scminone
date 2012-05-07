@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+
+BEGIN {
+use File::Basename;
+$cwdir = dirname($0);
+unshift (@INC, $cwdir.'/../lib');
+}
+
+use Getopt::Long;
+use Common;
+use Mailiter;
+use Clearcase;
+
+my $status = 0;
+eval {
+	(&isScmDebug()) && debug("start BMC2....");
+	&parseOptions(@ARGV);
+	
+	(&isScmDebug()) && debug("end BMC2....");
+};
+if ($@) {
+  print "$@";
+  $status = 1;
+}
+
+exit $status;
+
+sub parseOptions
+{
+	my (@args) = @_;
+	my %opts = ();
+	my $argsize = @args;
+	my $rc = GetOptions(\%opts, "-help", 
+					   "-view|v=s"
+			   );
+
+	## Print usage if requested
+	if ((exists($opts{help}) && $opts{help}) ||($argsize==0)) {
+	  displayHelp();
+	  exit(0);
+	}
+
+	unless ($rc) {
+	  error( "Incorrect command-line option-syntax!\nUse the -help to see invocation syntax.");
+	  exit(2);
+	}
+	return %opts;
+}
+
+sub displayHelp
+{
+		print <<EOF
+dev [-v.iew VIEW] 
+EOF
+}
