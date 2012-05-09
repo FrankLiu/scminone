@@ -12,6 +12,7 @@ import re
 import logging
 from subprocess import Popen, PIPE, STDOUT
 import bmcapi as bmc
+import command as cmd
 
 logger = logging.getLogger("bmc.clearcase")
 
@@ -25,35 +26,7 @@ class ViewNotExist(Exception):
 def cleartool(command, *args, **kwargs):
 	logger.info("cleartool [%s] start..."%command)
 	cleartool = bmc.config.get('cleartool')
-	splitpattern = r'\s+'
-	splitchar = ' '
-	cmdarr = re.split(splitpattern, command)
-	if len(cmdarr) > 1:
-		cmd = cmdarr[0].strip()
-		arguments = splitchar.join(cmdarr[1:]).strip() + splitchar + splitchar.join([arg for arg in args]).strip()
-		arguments = arguments.strip()
-	else:
-		cmd = command.strip()
-		arguments = splitchar.join([arg for arg in args]).strip()
-	logger.info("{ct} {cmd} {args}".format(ct=cleartool, cmd=cmd, args=arguments))
-	if len(kwargs) > 0:
-		p1 = Popen([cleartool, cmd]+ re.split(splitpattern, arguments), stdout=PIPE, stderr=PIPE)
-		lastPipe = p1
-		items = kwargs.items()
-		logger.debug("kwargs length: {length}".format(length=len(items)))
-		for (i,(k,v)) in enumerate(items):
-			logger.debug("{i}: {k}={v}".format(i=i,k=k,v=v))
-			if i == len(items)-1:
-				logger.debug("{i} == {len}-1, it is the latest one".format(i=i,len=len(items)))
-				stderrPipe = STDOUT
-			else:
-				stderrPipe = PIPE
-			p = Popen([k, v], stdin=lastPipe.stdout, stdout=PIPE, stderr=stderrPipe)
-			lastPipe = p
-		output = lastPipe.communicate()[0]
-	else:
-		output = Popen([cleartool, cmd]+ re.split(splitpattern, arguments), stdout=PIPE, stderr=STDOUT).communicate()[0]
-	logger.debug(output.strip())
+	output = cmd.run("{ct} {command}".format(ct=cleartool, command=command), *args, **kwargs)
 	logger.info("cleartool [%s] end."%command)
 	return output
 
@@ -66,19 +39,8 @@ def cleartoolInView(view, command, *args, **kwargs):
 	if not isViewExist(view):
 		raise ViewNotExist(view)
 	cleartool = bmc.config.get('cleartool')
-	splitpattern = r'\s+'
-	splitchar = ' '
-	cmdarr = re.split(splitpattern, command)
-	if len(cmdarr) > 1:
-		cmd = cmdarr[0].strip()
-		arguments = splitchar.join(cmdarr[1:]).strip() + splitchar + splitchar.join([arg for arg in args]).strip()
-		arguments = arguments.strip()
-	else:
-		cmd = command.strip()
-		arguments = splitchar.join([arg for arg in args]).strip()
-	logger.info("{ct} setview -exe '{cmd} {args}' {view}".format(ct=cleartool, cmd=cmd, args=arguments, view=view))
-	output = Popen([cleartool, 'setview', '-exe', "{cmd} {args}".format(cmd=cmd,args=arguments), view], stdout=PIPE, stderr=STDOUT).communicate()[0]
-	logger.debug(output.strip())
+	command = cmd.parseAsStr(command, *args, **kwargs)
+	output = cmd.run("{ct} setview -exec \"{command}\" {view}".format(ct=cleartool,command=command,view=view), *args, **kwargs)
 	logger.info("cleartool setview -exe \"{command}\" {view} end.".format(view=view,command=command))
 	return output
 	

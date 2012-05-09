@@ -77,7 +77,7 @@ def main():
 	load_env(bmc.config)
 	instance = bmc.XmlLoader(insname).getInstance()
 	e = executor.Executor(instance)
-	e.runStep("testls")
+	e.runCommand("ls -l | tail -1 | grep test")
 	e.runTask("cCheckView", "cwnj74_wimax_cosim")
 	e.runCleartool("lsview  -s cwnj74_wimax_cosim", tail="-1")
 	clearcase.getBuildVersion("cwnj74_wimax_cosim")

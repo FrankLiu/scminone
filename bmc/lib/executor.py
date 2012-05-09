@@ -8,6 +8,7 @@ import logging
 import model
 import bmcapi as bmc
 import tasks
+import command
 import clearcase
 
 class Executor:
@@ -76,57 +77,8 @@ class Executor:
 		self.logger.info("task [%s] end."%taskname)
 		return ret
 	
-	def runCleartool(self, command, *args, **kwargs):
-		clearcase.ct(command, *args, **kwargs)
+	def runCleartool(self, cmd, *args, **kwargs):
+		clearcase.ct(cmd, *args, **kwargs)
 	
-	def runCommand(self, command, *args, **kwargs):
-		logger.info("command [%s] start..."%command)
-		pipesplitpattern = r'\|'
-		splitpattern = r'\s+'
-		splitchar = ' '
-		if re.search(pipesplitpattern, command) is not None: #put all in one command, will not check *args and **kwargs
-			cmds = re.split(pipesplitpattern, command)
-			p1 = Popen(re.split(splitpattern, cmds[0]), stdout=PIPE, stderr=PIPE)
-			lastPipe = p1
-			pipecmds = cmds[1:] or list()
-			if len(pipecmds) > 0:
-				for (i, cmd) in enumerate(pipecmds[1:]):
-					logger.debug("{i}: {cmd}".format(i=i,cmd=cmd))
-					if i == len(pipecmds)-1:
-						logger.debug("{i} == {len}-1, it is the latest one".format(i=i,len=len(pipecmds)))
-						stderrPipe = STDOUT
-					else:
-						stderrPipe = PIPE
-					p = Popen([k, v], stdin=lastPipe.stdout, stdout=PIPE, stderr=stderrPipe)
-					lastPipe = p
-			output = lastPipe.communicate()[0]
-		else:
-			cmdarr = re.split(splitpattern, command)
-			if len(cmdarr) > 1:
-				cmd = cmdarr[0].strip()
-				arguments = splitchar.join(cmdarr[1:]).strip() + splitchar + splitchar.join([arg for arg in args]).strip()
-				arguments = arguments.strip()
-			else:
-				cmd = command.strip()
-				arguments = splitchar.join([arg for arg in args]).strip()
-			logger.info("{ct} {cmd} {args}".format(ct=cleartool, cmd=cmd, args=arguments))
-			if len(kwargs) > 0:
-				p1 = Popen([cleartool, cmd]+ re.split(splitpattern, arguments), stdout=PIPE, stderr=PIPE)
-				lastPipe = p1
-				items = kwargs.items()
-				logger.debug("kwargs length: {length}".format(length=len(items)))
-				for (i,(k,v)) in enumerate(items):
-					logger.debug("{i}: {k}={v}".format(i=i,k=k,v=v))
-					if i == len(items)-1:
-						logger.debug("{i} == {len}-1, it is the latest one".format(i=i,len=len(items)))
-						stderrPipe = STDOUT
-					else:
-						stderrPipe = PIPE
-					p = Popen([k, v], stdin=lastPipe.stdout, stdout=PIPE, stderr=stderrPipe)
-					lastPipe = p
-				output = lastPipe.communicate()[0]
-			else:
-				output = Popen([cleartool, cmd]+ re.split(splitpattern, arguments), stdout=PIPE, stderr=STDOUT).communicate()[0]
-		logger.debug(output.strip())
-		logger.info("command [%s] end."%command)
-		return output.strip()
+	def runCommand(self, cmd, *args, **kwargs):
+		command.run(cmd, *args, **kwargs)
