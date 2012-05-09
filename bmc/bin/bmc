@@ -7,6 +7,8 @@ import logging.config
 from optparse import OptionParser
 
 BMC_VERSION="BMC-2.0.1"
+__version__ = BMC_VERSION
+
 def current_path():
 	return os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 def append_sys_path(path):
@@ -41,7 +43,7 @@ def parse_args():
 	parser.add_option("-s", "--step", dest="step", help="given the step name", default="noUse")
 	parser.add_option("-v","--view", dest="view", help="given the view name", default="noUse")
 	parser.add_option("-m", "--mode", dest="mode", help="given the build mode", default="noUse")
-	#parser.add_option("-b", "--version", default="" help="show bmc version")
+	#parser.add_option("-b", "--version", help="show bmc version")
 	(options, args) = parser.parse_args()
 	if getattr(options, 'instance') == None:
 		parser.error("Instance not provider!")
@@ -80,7 +82,8 @@ def main():
 	e.runCommand("ls -l | tail -1 | grep test")
 	e.runTask("cCheckView", "cwnj74_wimax_cosim")
 	e.runCleartool("lsview  -s cwnj74_wimax_cosim", tail="-1")
-	clearcase.getBuildVersion("cwnj74_wimax_cosim")
+	clearcase.getLastLabel("apbld_tmp-wmx50-build-test")
+	clearcase.getNextLabel("apbld_tmp-wmx50-build-test")
 	logger.info("BMC End")
 
 if __name__ == "__main__":

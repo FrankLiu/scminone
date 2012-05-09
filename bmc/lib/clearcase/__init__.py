@@ -39,7 +39,6 @@ def cleartoolInView(view, command, *args, **kwargs):
 	if not isViewExist(view):
 		raise ViewNotExist(view)
 	cleartool = bmc.config.get('cleartool')
-	command = cmd.parseAsStr(command, *args, **kwargs)
 	output = cmd.run("{ct} setview -exec \"{command}\" {view}".format(ct=cleartool,command=command,view=view), *args, **kwargs)
 	logger.info("cleartool setview -exe \"{command}\" {view} end.".format(view=view,command=command))
 	return output
@@ -58,17 +57,20 @@ def isViewExist(view):
 		logger.info("View [%s] exist"%view)
 		return True
 
-def getBuildVersion(view):
+def getNextVersion(view, product):
 	logger.info("get build version for view {view}".format(view=view))
-	output = ctInView(view, bmc.config.get("cmbpLabel"), "apsac", tail='-1')
+	output = ctInView(view, bmc.config.get("cmbpLabel")+" " + product, tail='-1')
 	logger.debug(output)
 	return output
-def getLabel(view):
-	return getBuildVersion(view)
-def getNextBuildVersion(view):
-	pass
 def getNextLabel(view):
-	return getNextBuildVersion(view)
+	return getNextVersion(view)
+def getLastVersion(view):
+	logger.info("get last build version for view {view}".format(view=view))
+	output = ctInView(view, bmc.config.get("cmbpPrevLabel")+" " + product, tail='-1')
+	logger.debug(output)
+	return output
+def getLastLabel(view):
+	return getLastBuildVersion(view)
 
 	
 

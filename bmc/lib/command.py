@@ -56,20 +56,24 @@ def run(command, *args, **kwargs):
 	"""
 	logger.info("command [%s] start..."%command)
 	cmds = parse(command, *args, **kwargs)
-	if len(cmds) == 1:
-		p = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
-	elif len(cmds) == 2:
-		p1 = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
-		p = Popen(arg_split_pattern.split(cmds[1]), stdin=p1.stdout, stdout=PIPE, stderr=STDOUT)
-	else: #len(cmds) >= 3
-		p = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
-		for cmd in cmds[1:len(cmds)-2]:
-			logger.debug("sub-command: {cmd}".format(cmd=cmd))
-			p = Popen(arg_split_pattern.split(cmd), stdin=p.stdout, stdout=PIPE, stderr=PIPE)
-		p = Popen(arg_split_pattern.split(cmds[len(cmds)-1]), stdin=p.stdout, stdout=PIPE, stderr=STDOUT)
-	output = p.communicate()[0]
-	logger.debug("command output:")
-	logger.debug(output.strip())
+	output = ""
+	try:
+		if len(cmds) == 1:
+			p = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
+		elif len(cmds) == 2:
+			p1 = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
+			p = Popen(arg_split_pattern.split(cmds[1]), stdin=p1.stdout, stdout=PIPE, stderr=STDOUT)
+		else: #len(cmds) >= 3
+			p = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
+			for cmd in cmds[1:len(cmds)-2]:
+				logger.debug("sub-command: {cmd}".format(cmd=cmd))
+				p = Popen(arg_split_pattern.split(cmd), stdin=p.stdout, stdout=PIPE, stderr=PIPE)
+			p = Popen(arg_split_pattern.split(cmds[len(cmds)-1]), stdin=p.stdout, stdout=PIPE, stderr=STDOUT)
+		output = p.communicate()[0]
+		logger.debug("command output:")
+		logger.debug(output.strip())
+	except IOError as e:
+		self.logger.fatal("Execution failed:"+e)
 	logger.info("command [%s] end."%command)
 	return output.strip()
 
