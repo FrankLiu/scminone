@@ -70,7 +70,7 @@ def getLastVersion(view):
 	logger.debug(output)
 	return output
 def getLastLabel(view):
-	return getLastBuildVersion(view)
+	return getLastVersion(view)
 
 	
 
