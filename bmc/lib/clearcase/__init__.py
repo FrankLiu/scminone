@@ -62,15 +62,15 @@ def getNextVersion(view, product):
 	output = ctInView(view, bmc.config.get("cmbpLabel")+" " + product, tail='-1')
 	logger.debug(output)
 	return output
-def getNextLabel(view):
+def getNextLabel(view, product):
 	return getNextVersion(view)
-def getLastVersion(view):
+def getLastVersion(view, product):
 	logger.info("get last build version for view {view}".format(view=view))
 	output = ctInView(view, bmc.config.get("cmbpPrevLabel")+" " + product, tail='-1')
 	logger.debug(output)
 	return output
-def getLastLabel(view):
-	return getLastVersion(view)
+def getLastLabel(view, product):
+	return getLastVersion(view, product)
 
 	
 

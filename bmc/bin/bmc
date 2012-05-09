@@ -82,8 +82,8 @@ def main():
 	e.runCommand("ls -l | tail -1 | grep test")
 	e.runTask("cCheckView", "cwnj74_wimax_cosim")
 	e.runCleartool("lsview  -s cwnj74_wimax_cosim", tail="-1")
-	clearcase.getLastLabel("apbld_tmp-wmx50-build-test")
-	clearcase.getNextLabel("apbld_tmp-wmx50-build-test")
+	clearcase.getLastLabel("apbld_tmp-wmx50-build-test", "apsac")
+	clearcase.getNextLabel("apbld_tmp-wmx50-build-test", "apsac")
 	logger.info("BMC End")
 
 if __name__ == "__main__":
