@@ -1,5 +1,5 @@
 name=BMC
-version=2.0.1
+version=2.0.2
 cur_dir=${shell pwd}
 cur_date=${shell date +%Y%m%d}
 bmc_label=${name}_${version}
