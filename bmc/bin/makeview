@@ -1,0 +1,994 @@
+#!/apps/public/bin/perl -U
+##!/apps/public/bin/perl -w
+##!/usr/bin/perl -U
+# When testing, use -w. The -U is needed to use the setgid
+# so the script is unreadable by all, but executable with
+# the setgid ksh frontend script.
+#
+# -----------------------------------------------------------------------------
+#                     S C R I P T   S P E C I F I C A T I O N
+#                          COPYRIGHT 2004 MOTOROLA INC.
+# -----------------------------------------------------------------------------
+#
+# NAME
+#       makeview    -   Find storage location and makeview on servers.
+#                           
+#
+# REVISION HISTORY
+#       2004 Oct 28 Curt Danielsen      original
+#       2004 Nov 18 Curt Danielsen      Include explicit host & path
+#                                       for Linux support.
+#       2007 Apr  1 Curt Danielsen      Update for Networks. Incorporate
+#                                       makeview script functionality.
+#       2007 Jun  5 Curt Danielsen      Added "unlink" to address .kshrc option.
+#       2007 Jun  6 Curt Danielsen      Address cmbp mkview -mknt option.
+#       2007 Jun  7 Curt Danielsen      Add in support for umask option.
+#       2007 Jul  3 Curt Danielsen      Added support to the IRP region.
+#       2007 Jul 23 Curt Danielsen      Added support for cmbp LTE.
+#       2007 Nov  2 Curt Danielsen      Added cmbp lte_mme and lte_sgw options.
+#       2008 Aug 16 Curt Danielsen      CC7 changed region file location.
+#       2011 Nov 15 Srinivas M          Changed domain search to use NSN
+#
+# USAGE
+#       makeview [ <no options interactive> | -h | -u <umask> | 
+#                -cmbp <wibb|lte|lte_mme|lte_sgw> | "mkview options"]
+#
+#
+# DESCRIPTION
+#       This script creates a clearcase view on the person's designated
+#       view server. That is the primary purpose of the script: To
+#       locate the user's view directory on the view server and 
+#       make a view in their view storage directory. It will not
+#       work to create a view on any other server and will error out.
+#       The script will ensure the tag does not already exist.
+#       The script will used the same name for the view storage directory.
+#       Finally, the script will pass all the parameters entered to the
+#       cleartool mkview command. In this way, the script can be used to
+#       create views with special options. The user should not provide
+#       the view storage path.
+#
+# PARAMETERS
+#
+#       "mkview options"    -   Any options allowed by mkview. It will
+#                               be passed all options and do the validation.
+#
+# RETURN CODE
+#       SUCCESS     Sucessful return code.
+#                   Error code returned to the calling script/shell.
+#                   
+#
+# ******************************** MAIN SCRIPT ********************************
+#
+# ---------------------------- LIBRARY DECLARATIONS ---------------------------
+#
+require 5.002;
+use sigtrap;
+use Socket;
+#
+# ---------------------------- CONSTANT DECLARATION ---------------------------
+#
+# The only difference between CONSTANT and VARIABLE declarations is that
+# CONSTANTS should never be changed (obviously).
+# <var_type>c_<var_name> = <value>;
+$SUCCESS = 0;
+$HELP = 1;
+$INTERACTIVE = 2;
+$MKVIEWFAILED = 3;
+$TAGNOTPROVIDED = 4;
+$NOVIEWSTORAGE = 5;
+$MULTIPLELOCATIONS = 6;
+$INVALID_CMBP_OPTION = 7;
+$BADUMASK = 8;
+$NOCLEARCASE = 9;
+$OLDIRPREGION = 10;
+#
+
+@validviewservers = (   "il27cndview01",
+                         "il27view02",
+                         "il27view03",
+                     );
+
+$SERVERDOMAIN = "americas.nsn-net.net";
+
+# WIBB CMBP mkview path.
+$CMBP_MKVIEW_WIBB = "/mot/proj/wibb_bts/cmbp/prod/cm-policy/bin/mkview";
+$CMBP_MKVIEW_LTE = "/mot/proj/lte/cmbp/cm-policy/bin/mkview";
+$CMBP_MKVIEW_LTE_MME = "/mot/proj/lte/cmbp_mme/prod/cm-policy/bin/mkview";
+$CMBP_MKVIEW_LTE_SGW = "/mot/proj/lte/cmbp_sgw/prod/cm-policy/bin/mkview";
+
+# Standard cleartool mkview command:
+$CLEARTOOL = "/usr/atria/bin/cleartool";
+$STD_CC_MKVIEW = "/usr/atria/bin/cleartool mkview ";
+
+#
+# OLD Shared View Storage Values
+# Values of:
+# Server LocalPath GlobalPath
+# $VIEWOPTS=`/bin/cat /mot/proj/ccase/usr/etc/mkview_opt/view_options`;
+#$VIEWOPTS=`/bin/cat /mot/proj/ccase/usr/etc/mkview_opt/view_options_irp`;
+$hostregion="";
+# $HOSTREGION=`/bin/cat /var/adm/atria/rgy/rgy_region.conf`;
+# chomp ($HOSTREGION);
+@VIEWARRAY = split ( ' ', $VIEWOPTS );
+
+#
+# Set boolean values.
+#
+# $TRUE = 1;
+# $FALSE = 0;
+#
+#
+# ---------------------------- VARIABLE DECLARATION ---------------------------
+#
+# <variable> = <value>;
+$exit_code = $SUCCESS;
+#
+#
+$cmd = "";
+$viewtag = "";
+$viewpath = "";
+$server = "";
+$cmbp_option = "";
+$mkview_cmd = "";
+$mknt_option = "";
+@umask_cmd = ();
+@mknt_array = ();
+#
+#
+# ---------------------------- PARAMETER DECLARATION --------------------------
+#
+#   WHAT:   Check parameter input.
+#   WHY:    We have a certain expectation for information.
+#
+if ( $exit_code == $SUCCESS ) {
+    if ($#ARGV < 0) {
+        print "Usage: makeview [ <No options, interactive> | \n";
+        print "                  -h | [ -u <umask>] \n";
+        print "                 | -cmbp <cmbp mkview options> |\n";
+        print "                  <cleartool mkview options> ]\n";
+        $exit_code = $INTERACTIVE
+    }
+    else {
+        $cmd = $ARGV[0];
+        SWITCH: {
+            if ( "$cmd" eq "-h" ) {
+                print <<EOF;
+Usage:  makeview [ <no options interactive> | -h | -u <umask> | -cmbp <wibb|lte|lte_mme|lte_sgw> | "mkview options"]
+
+No Options - Interactive to create a view
+-h         - this option.
+-u <umask> - umask to use when creating the view.
+-cmbp      - "wibb" to interface to cmbp for wibb/wimax development.
+           - "lte", "lte_mme", or "lte_sgw" to interface to cmbp for 
+             LTE development
+"mkview options" - Any "cleartool mkview" options, EXCEPT the
+                   storage directory for the view.
+ 
+The main benefit of using this script is it locates your view
+storage for you on the Unix view servers. If you do not have a
+view storage directory on one of the servers, then you may not
+have been setup or had your view storage moved. Each group goes
+through a process with IT support to determine view storage sizes.
+If the script shows multiple view storage directories for you, this
+is an error. You should then log a ticket at
+http://rc.mot.com/clearcase/contact
+
+The one assumption this script makes is the view storage directory will
+have the same name as the view tag. There is nothing special about this,
+other than it simplies the script. You can always cd into your view
+storage directory on the server and use "cleartool mkview" command
+to create a view with the options you prefer.
+
+Examples:
+makeview -tag ccd017.view
+makeview -tag ccd017.view -u 002
+makeview -tag ccd017.view -textmode strip_cr
+makeview -tag ccd017.view -nsh
+EOF
+                $exit_code = $HELP;
+            last SWITCH;
+            }
+        }
+    }
+}
+#
+# ---------------------------- SUBROUTINE DECLARATION --------------------------
+#
+#   STRING locate_view (PTR viewserver, serverdomain)
+#
+sub locate_view (\@$);
+#
+#   STRING get_view_tag (STRING option_list, ARRAY ARGV)
+#
+sub get_view_tag ($);
+#
+#   STRING get_server (STRING global_view_storage_path)
+#
+sub get_server ($);
+#
+#   STRING get_local_path (STRING global_view_storage_path)
+#
+sub get_local_path ($);
+#
+#   STRING get_cmdline_args ()
+#
+sub get_cmdline_args ();
+#
+#   STRING find_cmbp_option (ARRAY ARGV)
+#
+sub find_cmbp_option ();
+#
+#   STRING chomp_mknt_option (ARRAY ARGV)
+#
+sub chomp_mknt_option ();
+#
+#   BOOLEAN umask_ok (PTR ARRAY) ARRAY ARGV
+#
+sub umask_ok (\@);
+# ---------------------------------- SCRIPT -----------------------------------
+#
+#   WHAT:   Ensure cleartool command exists.
+#   WHY:    People may try to run it where clearcase is not installed.
+#           Catch that and fail.
+#           
+if ( ( $exit_code == $INTERACTIVE) || ( $exit_code == $SUCCESS ) ) {
+    $return_code = system ("/usr/bin/ksh", "-c", "$CLEARTOOL -ver >/dev/null 2>/dev/null");
+    if ( ($return_code / 256) != $SUCCESS ) {
+       $exit_code = $NOCLEARCASE;
+       print "ERROR: Clearcase is not installed on this machine.\n";
+       print "Please login to a build machine where clearcase is\n";
+       print "installed to run the makeview script.\n"
+    }
+}
+#
+#   WHAT:   If the exit_code is INTERACTIVE, get view tag and comment
+#           from the command line. Set ARGV as if the tag and command came
+#           from the command line.
+#   WHY:    Operation of the old makeview ksh script. Continue to support
+#           that operation. After information is obtained from the command line,
+#           continue normal processing. Setting ARGV will allow the rest of the
+#           processing to fall into place.
+#
+if ( $exit_code == $INTERACTIVE ) {
+    $exit_code = get_cmdline_args ();
+}
+    
+#   WHAT:   If exit_code is success, then we can proceed.
+#   WHY:    We have a valid request. Call the right server and
+#           pass it on, or process the home or view request.
+#
+if ( $exit_code == $SUCCESS ) {
+    $viewpath = locate_view (@validviewservers, $SERVERDOMAIN);
+    if ( $viewpath eq "" ) {
+        $exit_code = $NOVIEWSTORAGE;
+    }
+    if ( $viewpath eq "MORETHANONE" ) {
+        $exit_code = $MULTIPLELOCATIONS;
+    }
+}
+#   WHAT:   See if -u <umask> provided. If found remove the -u and the umask
+#           from the ARGV so the remaining can be past to the cleartool mkview
+#           command.
+#   WHY:    This is legacy support for "shared views" in Networks. Yea.
+#
+if ( $exit_code == $SUCCESS ) {
+    if ( umask_ok (@umask_cmd) == $FALSE ) {
+        $exit_code = $BADUMASK;
+    }
+}
+#   WHAT:   Determine clearcase region.
+#   WHY:    If IRP region, treat things differetly.
+#   NOTE:   This should be removed once the IRP region is gone.
+#
+if ( $exit_code == $SUCCESS ) {
+    $return_code = system ("/usr/bin/ksh", "-c", "$CLEARTOOL lsregion >/tmp/regionfile.$$ 2>/dev/null");
+    open (REGIONFILE, "/tmp/regionfile.$$");
+    $hostregion = <REGIONFILE>;
+    chomp ($hostregion);
+    close (REGIONFILE);
+    unlink "/tmp/regionfile.$$";
+}
+#   WHAT:   If this is the case, then we revert to using the old style of shared
+#           view storage IN THE IRP REGION!
+#   WHY:    This region is a one off, separate setup.
+#   NOTE:   This section should be removed once all the shared view storage
+#           has been removed!!!
+#
+if ( $exit_code == $SUCCESS && $hostregion eq "IRP" ) {
+    print "Reverting to use legacy IRP view partitions.\n";
+    $viewtag = get_view_tag ("-tag");
+    if ( $viewtag ne "" ) {
+        $server = $VIEWARRAY[0] . '.' . $SERVERDOMAIN;
+        $localpath = $VIEWARRAY[1] . '/' . $viewtag . '.vws';
+        $viewpath = $VIEWARRAY[2] . '/' . $viewtag . '.vws';
+        $return_code = system ("/usr/bin/ksh", "-c", "@umask_cmd $STD_CC_MKVIEW @ARGV -host $server -hpath $localpath -gpath $viewpath $viewpath");
+        if ( ($return_code / 256) != $SUCCESS ) {
+            $exit_code = $MKVIEWFAILED;
+        }
+    }
+    else {
+        $exit_code = $TAGNOTPROVIDED;
+        print "ERROR: -tag not provided. Please run\n";
+        print "\"cleartool man mkview\" for usage.\n";
+    }
+    $exit_code = $OLDIRPREGION;
+}    
+#
+#   WHAT:   Wibb/Wimax is using CMBP. It has it's own mkview script. What we need
+#           to do is call the cmbp mkview script, use -store to point the script
+#           to the view location for this person, then pass all the remaining 
+#           parameters into the cmbp mkview script.
+#   WHY:    This is how their script works. Provides an interface for wibb team.
+#   NOTE:   Once CMBP modifies their "create_view" routine and engineers can call
+#           cmbp mkview directly, this goes away.
+#
+if ( $exit_code == $SUCCESS ) {
+    #
+    #   WHAT:   ARGV is searched for a -cmbp flag. This is specific to processing
+    #           for cmbp. If no -cmbp option, revert to normal processing.
+    #   WHY:    Have to call cmbp mkview script. Need to set it up appropriately.
+    #           Also, ARGV is re-written, removing the -cmbp options.
+    #
+    $cmbp_option = find_cmbp_option ();
+    SWITCH: {
+        ($cmbp_option eq "wibb")    and do {
+            $viewtag = get_view_tag ("-tag -cr -br");
+            if ( $viewtag ne "" ) {
+                $mkview_cmd = $CMBP_MKVIEW_WIBB;
+            }
+            else {
+                $exit_code = $TAGNOTPROVIDED;
+                print "ERROR: -tag or -cr or -br not provided. Please run\n";
+                print "\"$CMBP_MKVIEW_WIBB -help\" for usage.\n";
+            }
+            last SWITCH;
+        };
+        ($cmbp_option eq "lte")    and do {
+            $viewtag = get_view_tag ("-tag -cr -br");
+            if ( $viewtag ne "" ) {
+                $mkview_cmd = "$CMBP_MKVIEW_LTE -v LTE";
+            }
+            else {
+                $exit_code = $TAGNOTPROVIDED;
+                print "ERROR: -tag or -cr or -br not provided. Please run\n";
+                print "\"$CMBP_MKVIEW_LTE -help\" for usage.\n";
+            }
+            last SWITCH;
+        };
+        ($cmbp_option eq "lte_mme")    and do {
+            $viewtag = get_view_tag ("-tag -cr -br");
+            if ( $viewtag ne "" ) {
+                $mkview_cmd = "$CMBP_MKVIEW_LTE_MME -v LTE_MME";
+            }
+            else {
+                $exit_code = $TAGNOTPROVIDED;
+                print "ERROR: -tag or -cr or -br not provided. Please run\n";
+                print "\"$CMBP_MKVIEW_LTE_MME -help\" for usage.\n";
+            }
+            last SWITCH;
+        };
+        ($cmbp_option eq "lte_sgw")    and do {
+            $viewtag = get_view_tag ("-tag -cr -br");
+            if ( $viewtag ne "" ) {
+                $mkview_cmd = "$CMBP_MKVIEW_LTE_SGW -v LTE_SGW";
+            }
+            else {
+                $exit_code = $TAGNOTPROVIDED;
+                print "ERROR: -tag or -cr or -br not provided. Please run\n";
+                print "\"$CMBP_MKVIEW_LTE_SGW -help\" for usage.\n";
+            }
+            last SWITCH;
+        };
+        ($cmbp_option eq "")    and do {
+            #   WHAT:   No -cmbp option. Continue with normal "cleartool mkview"
+            #           processing.
+            #   WHAT:   It's out job! (and it's the default).
+            #
+            $viewtag = get_view_tag ("-tag");
+            if ( $viewtag ne "" ) {
+                $mkview_cmd = $STD_CC_MKVIEW;
+            }
+            else {
+                $exit_code = $TAGNOTPROVIDED;
+                print "ERROR: -tag not provided. Please run\n";
+                print "\"cleartool man mkview\" for usage.\n";
+            }
+            last SWITCH;
+        };
+        $exit_code = $INVALID_CMBP_OPTION;
+        print "ERROR: -cmbp $cmbp_option NOT a valid -cmbp option\n";
+        print "Valid -cmbp options: wibb, lte, lte_mme, or lte_sgw\n";
+    };
+    #   WHAT:   We have valid options. Try to make the view!
+    #   WHY:    It's out job!
+    #
+    if ( $exit_code == $SUCCESS ) {
+        $server = get_server ("$viewpath/$viewtag");
+        $localpath = get_local_path ("$viewpath/$viewtag");
+        #
+        #   WHAT:   cleartool mkview and cmbp mkview slightly different. cmbp mkview
+        #           has no dynamic view storage path. Clearcase does.
+        #   WHY:    Cause cmbp wanted to be different?!? 
+        #
+        if ($cmbp_option eq "") {
+            # print "@umask_cmd $mkview_cmd @ARGV -host $server -hpath $localpath -gpath $viewpath/$viewtag $viewpath/$viewtag\n";
+            $return_code = system ("/usr/bin/ksh", "-c", "@umask_cmd $mkview_cmd @ARGV -host $server -hpath $localpath -gpath $viewpath/$viewtag $viewpath/$viewtag");
+        }
+        else {
+            #   WHAT:   See if -mk.nttag was entered.
+            #   WHY:    User wants view tagged in windows region. Strip off this option and
+            #           properly setup the mkview command with the appropriate windows path.
+            #
+            $mknt_option = chomp_mknt_option ();
+            if ( $mknt_option ne "" ) {
+                $mknt_array[0] = "-mknt";
+                $mknt_array[1] = "-nt_gpath";
+                $ntpath = $localpath;
+                $ntpath =~ s/\//\\\\/g;
+                $mknt_array[2] = "\\\\\\\\" . $server . $ntpath;
+            }            
+            # print "@umask_cmd $mkview_cmd @ARGV -host $server -hpath $localpath -gpath $viewpath/$viewtag @mknt_array\n";
+            $return_code = system ("/usr/bin/ksh", "-c", "@umask_cmd $mkview_cmd @ARGV -host $server -hpath $localpath -gpath $viewpath/$viewtag @mknt_array");
+        }
+        if ( ($return_code / 256) != $SUCCESS ) {
+           $exit_code = $MKVIEWFAILED;
+        }
+    }
+}
+#   WHAT:   If this is the case, then we revert to using the old style of shared
+#           view storage. 
+#   WHY:    Not everyone is setup with quota'ed view storage. 
+#   NOTE:   This section should be removed once all the shared view storage
+#           has been removed!!!
+#
+# if ( $exit_code == $NOVIEWSTORAGE ) {
+#    print "Reverting to use legacy view partitions.\n";
+#    $viewtag = get_view_tag ("-tag");
+#    if ( $viewtag ne "" ) {
+#        $server = $VIEWARRAY[0] . '.' . $SERVERDOMAIN;
+#        $localpath = $VIEWARRAY[1] . '/' . $viewtag . '.vws';
+#        $viewpath = $VIEWARRAY[2] . '/' . $viewtag . '.vws';
+#        $return_code = system ("/usr/bin/ksh", "-c", "/usr/atria/bin/cleartool mkview @ARGV -host $server -hpath $localpath -gpath $viewpath $viewpath");
+#        if ( ($return_code / 256) != $SUCCESS ) {
+#            $exit_code = $MKVIEWFAILED;
+#        }
+#    }
+#    else {
+#        $exit_code = $TAGNOTPROVIDED;
+#        print "ERROR: -tag not provided. Please run\n";
+#        print "\"cleartool man mkview\" for usage.\n";
+#    }
+# }    
+
+exit($exit_code);
+#
+#
+# ************************ SUBROUTINE DEFINITION *****************************
+#
+# NAME
+#       get_cmdline_args    -   Interactively, get command line arguments.
+#
+# USAGE
+#        NUMERIC get_local_path ()
+#
+#
+# DESCRIPTION
+#       This routines queries the user for the view tag and a comment.
+#       It does not check the view tag if it's a duplicate. We are letting the
+#       cleartool mkview command trap that error. The other thing this routine does
+#       is populate the ARGV array as if the -tag <viewtag> and tcomment "comment"
+#       where entered from the command line. Then all the subsequent processing falls
+#       into place.
+#
+# RETURNS
+#       ARGV array populated with -tag <viewtag> and an optional -tcomment "comment".
+#
+sub get_cmdline_args () {
+
+    #   WHAT:   Declare private variables for the passed in arguements.
+    #   WHY:    So it's clear.
+    # my ($var) = @_;
+
+    #   Private Variable Definitions.
+    #
+    my ($viewtag, $comment, $SUCCESS);
+
+    $SUCCESS = 0;
+
+    #   WHAT:   Get a view tag.
+    #   WHY:    Cause that's why were are running this silly code.
+
+    print "This script creates a new view on the UNIX view servers.\n";
+    print "Please enter the view tag you wish to use.\n";
+
+    $viewtag = <STDIN>;
+    chomp ($viewtag);
+    $ARGV[$#ARGV + 1] = "-tag";
+    $ARGV[$#ARGV + 1] = $viewtag;
+ 
+    print "Enter a view comment. Return for no comment.\n";
+
+    $comment = <STDIN>;
+    chomp ($comment);
+
+    if ( "$comment" ne "" ) {
+        $ARGV[$#ARGV + 1] = "-tcomment";
+        $ARGV[$#ARGV + 1] = "\"$comment\"";
+    }    
+    return ($SUCCESS);
+}
+#
+#
+# ************************ SUBROUTINE DEFINITION *****************************
+#
+# NAME
+#       get_local_path  -   Returns local view storage path.
+#
+# USAGE
+#       STRING get_local_path (global_view_stoage_path)
+#
+#
+# DESCRIPTION
+#       This routine takes the global view storage path,
+#       which is of the form /mot/ccase/<view_partition>/
+#       and returns the /export/<view_partition> portion.
+#
+# RETURNS
+#       localpath of the view storage directory.
+#
+sub get_local_path ($) {
+
+    #   WHAT:   Declare private variables for the passed in arguements.
+    #   WHY:    So it's clear.
+    my ($viewpath) = @_;
+
+    #   Private Variable Definitions.
+    #
+    my ($VIEWPREFIX, $viewlocation, $TRUE, $FALSE, $SUCCESS, $found, $server);
+    my ($returnpath);
+
+    $SERVERDOMAIN = "americas.nsn-net.net";
+    $LOCALVIEWPATH = "\/export";
+    $GLOBALPATH = "\/usr\/prod";
+
+    $returnpath = $viewpath;
+    $returnpath =~ s/$GLOBALPATH/$LOCALVIEWPATH/;
+
+    return ($returnpath);
+}
+
+#
+# ************************ SUBROUTINE DEFINITION *****************************
+#
+# NAME
+#       get_server  -   Returns the server where the view is located.
+#
+# USAGE
+#       STRING get_server (global_view_stoage_path)
+#
+#
+# DESCRIPTION
+#       This routine takes the global view storage path,
+#       which is of the form /mot/ccase/<view_partition>
+#       and returns the <server>.<domain> portion.
+#
+# RETURNS
+#       <server>.<domain> where the view storage is located.
+#
+sub get_server ($) {
+
+    #   WHAT:   Declare private variables for the passed in arguements.
+    #   WHY:    So it's clear.
+    my ($viewpath) = @_;
+    #   Private Variable Definitions.
+    #
+    my ($VIEWPREFIX, $viewlocation, $TRUE, $FALSE, $SUCCESS, $found, $server);
+    my ($returnserver, $return_code, $returnpath, $leftover);
+
+    $SERVERDOMAIN = "americas.nsn-net.net";
+    $LOCALVIEWPATH = "/export/view";
+
+    $viewdir = $viewpath;
+    $viewdir =~ s/(.*)\/(.*)/$1/;
+
+    $return_code = system ("/usr/bin/ksh", "-c", "cd $viewdir;(/bin/df -k . | /bin/grep $LOCALVIEWPATH >/tmp/dirfile.$$ 2>/dev/null)");
+
+    open (DIRFILE, "/tmp/dirfile.$$");
+    $returnpath = <DIRFILE>;
+    chomp ($returnpath);
+    ($returnserver, $leftover) = split (':', $returnpath);
+    close (DIRFILE);
+    unlink "/tmp/dirfile.$$";
+
+    #   WHAT:   Need to eliminate any <host>-<interface> names.
+    #   WHY:    Makeview will fail. Need just the hostname. Grr.
+    #
+    $returnserver =~ s/(.*)-(.*)/$1/g;
+    $returnserver = $returnserver . '.' . $SERVERDOMAIN;
+
+    return ($returnserver);
+}
+
+# ************************ SUBROUTINE DEFINITION *****************************
+#
+# NAME
+#       locate_view     -   Locate view directory for this user.
+#
+# USAGE
+#       STRING locate_view
+#
+#
+# DESCRIPTION
+#       This subroutine returns the view directory for this user.
+#       We have two error conditions to detect. One is if the person has
+#       no view storage directory. It is possible that accounts exist with
+#       no view storage. Could be a remote user who does not need view storage.
+#
+#       The second condition is if multiple view servers are found.
+#       This would happen if an admin created more than one storage
+#       location (e.g. moved a storage location and forgot to delete
+#       the old one). In this case, we inform the user and direct
+#       them to enter a ticket to have this situation addressed.
+#
+# RETURNS
+#       String which is the storage path of the person's view directory.
+#       It is the global path. e.g. /mot/ccase/<viewpartition>/<coreid>
+#
+sub locate_view (\@$) {
+
+    #   WHAT:   Declare private variables for the passed in arguements.
+    #   WHY:    So it's clear.
+    my ($viewserverlist, $serverdomain) = @_;
+
+    #   Private Variable Definitions.
+    #
+    my ($VIEWPREFIX, $viewlocation, $TRUE, $FALSE, $SUCCESS, $found, $server);
+    my ($returnserver, $returnpath, $netgrp);
+
+    $TRUE = 1;
+    $FALSE = 0;
+    $SUCCESS = 0;
+    $found = $FALSE;
+
+    $VIEWPREFIX = "/export/view";
+    $ESCAPEVIEWPREFIX = "\/export\/";
+    $GLOBALVIEWPREFIX = "/usr/prod/";
+    $acctname = getpwuid ($>);
+    # $viewlocation = $VIEWPREFIX . $acctname;
+    $returnpath = "";
+
+    #   WHAT:   Find the list of exported partitions on the view server. After that,
+    #           we translate by taking the leaf of the exported partition and pre-append
+    #           that to the global view prefix, add the suffix of '/*/<coreid>, then cycle
+    #           through those on the view server to see if we get a hit. So the global path
+    #           will be /mot/ccase/<view_partition>/*/<coreid>
+    #   WHY:    Looking for this user's view directory. Need to try them all to find it.
+    #
+
+    foreach $server (@{$viewserverlist}) {
+        $return_code = system ("/usr/bin/ksh", "-c", "/usr/sbin/showmount -e $server | grep $VIEWPREFIX >/tmp/exportlist.$$ 2>/dev/null");
+
+        open (EXPORTFILE, "/tmp/exportlist.$$");
+            while ($line = <EXPORTFILE>) {
+                ($viewlocation, $netgrp) = split (' ', $line);
+                $viewlocation =~ s/$ESCAPEVIEWPREFIX//;
+                $viewlocation = $GLOBALVIEWPREFIX . $viewlocation . '/*/' . $acctname; 
+                $return_code = system ("/usr/bin/ksh", "-c", "/bin/ls -d $viewlocation >/tmp/dirpath.$$ 2>/dev/null");
+                #   WHAT:   First time, we've found the first path. Found will be false, life is good.
+                #           Second time through, found is true, check returnpath. If not MORETHANONE,
+                #           this is the original first path we found. Print it. returnpath now set to
+                #           MORETHANONE. We don't print the original path found, just subsequent paths.
+                #   WHY:    Comes out right on the screen listing all paths found.
+                #
+                if ( ($return_code / 256) == $SUCCESS ) {
+                    if ($found) {
+                        if ($returnpath ne "MORETHANONE") {
+                            print "ERROR: Multiple view directories: $returnserver\n";
+                            print "ERROR: Path: $returnpath\n";
+                        }
+                        print "ERROR: Multiple view directories: $server\n";
+                        open (DIRFILE, "/tmp/dirpath.$$");
+                        $returnpath = <DIRFILE>;
+                        chomp ($returnpath);
+                        close (DIRFILE);
+                        print "ERROR: Path: $returnpath\n";
+                        $returnpath = "MORETHANONE";
+                    }
+                    else {
+                        open (DIRFILE, "/tmp/dirpath.$$");
+                        $returnpath = <DIRFILE>;
+                        chomp ($returnpath);
+                        close (DIRFILE);
+                        $returnserver = $server;
+                        $found = $TRUE;
+                    }
+                }
+                unlink "/tmp/dirpath.$$";
+            }
+        close (EXPORTFILE);
+        unlink "/tmp/exportlist.$$";
+    }
+    if ($returnpath eq "") {
+        print "No quota based view storage exists for you!\n";
+    }
+    if ($returnpath eq "MORETHANONE") {
+        print "Please enter a ticket at http://rc.mot.com/clearcase/contact\n";
+        print "and report that you have more than one view storage\n";
+        print "location exists as previously displayed.\n";
+    }
+
+    return ($returnpath);
+}
+# ************************ SUBROUTINE DEFINITION *****************************
+#
+# NAME
+#       get_view_tag    -   Parse options looking for the view tag.
+#
+# USAGE
+#       STRING get_view_tag "tag options" ARGV
+#
+# DESCRIPTION
+#       This routine walks through the ARGV array, looking for
+#       options provided in the "tag options" input string. The options
+#       are assumed to be separated by a space. When an option is found,
+#       the next option is assumed to be the tag/cr-id/br-id and returned.
+#       Return of blank indicates the option was not found.
+#
+# RETURNS
+#       String returns the view tag. Blank if the tag does not exist.
+#
+sub get_view_tag ($) {
+
+    my ($option_list) = @_;
+
+    #   Private Variable Definitions.
+    #
+    my ($dashoption, $theoption, $TRUE, $FALSE, $SUCCESS, @opt_array, $opt_item);
+
+    $TRUE = 1;
+    $FALSE = 0;
+    $SUCCESS = 0;
+    $dashoption = $FALSE;
+    $theoption = "";
+    $option = "";
+
+    #   WHAT:   Make an array out of the string list of options.
+    #   WHY:    Easier to process.
+    #
+    @opt_array = split (' ', $option_list);
+
+    #   WHAT:   Walk through the command line parameters.
+    #   WHY:    Looking for -tag. Need to return that option.
+    #
+    foreach $option (@ARGV) {
+        #   WHAT:   If dashtag was found in the previous iteration,
+        #           this option has to be the tag itself. Set the
+        #           thetag variable and set dashtag back to FALSE.
+        #   WHY:    We found the tag and we don't want to set the
+        #           tag value again on another pass.
+        if ($dashoption) {
+            $theoption = $option;
+            $dashoption = $FALSE;
+        }
+        #   WHAT:   We found one of the options. Set the dashtag boolean.
+        #   WHY:    So the next pass of this code, the previous lines
+        #           will pick up the tag name itself.
+        foreach $opt_item (@opt_array) {
+            if ($opt_item eq $option) {
+                $dashoption = $TRUE;
+            }
+        }
+    }
+    return ($theoption);
+}
+# ************************ SUBROUTINE DEFINITION *****************************
+#
+# NAME
+#       find_cmbp_option    -   Parse command line input looking for -cmbp
+#
+# USAGE
+#       STRING cmbp_found @ARGV
+#
+# DESCRIPTION
+#       This routine walks through the ARGV array, looking for the
+#       the -cmbp option. If found, the next argument should be the type.
+#       Currently, only "wibb" is supported. If found, ARGV is rewritten
+#       and removes these two parameters. ARGV can then be passed to the
+#       subsequent routines. 
+#
+# RETURNS
+#       String returns the cmbp option. Blank if the cmbp option does not exist.
+#
+sub find_cmbp_option () {
+
+    #   Private Variable Definitions.
+    #
+    my (@myargv, $dashcmbp, $cmbp_option, $option, $TRUE, $FALSE, $SUCCESS);
+
+    $TRUE = 1;
+    $FALSE = 0;
+    $SUCCESS = 0;
+    $dashcmbp = $FALSE;
+    $option = "";
+    $cmbp_option = "";
+    @myargv = @ARGV;
+    @ARGV = ();
+
+    #   WHAT:   Walk through the command line parameters.
+    #   WHY:    Looking for -cmbp. Need to return that option.
+    #
+    foreach $option (@myargv) {
+        #   WHAT:   If dashcmbp was found in the previous iteration,
+        #           this option has to be the cmbp option itself. Set
+        #           cmbp_option variable (e.g. value of "wibb") and set
+        #           dashcmbp back to FALSE.
+        #   WHY:    We found the cmbp option and we don't want to set the
+        #           value again on another pass.
+        if ($dashcmbp) {
+            $cmbp_option = $option;
+            $dashcmbp = $FALSE;
+        }
+        #   WHAT:   We found -cmbp. Set the dashtag boolean. Otherwise,
+        #           repopulate the ARGV array, PROVIDED cmbp_option is NOT
+        #           the current option.
+        #   WHY:    So the next pass of this code, the previous lines
+        #           will pick up the tag name itself. Also, strip out
+        #           "-cmbp <option>" from ARGV.
+        if ($option eq "-cmbp") {
+            $dashcmbp = $TRUE;
+        }
+        else {
+            if ($cmbp_option ne $option) {
+                $ARGV[$#ARGV + 1] = $option;
+            }
+        }
+    }
+    return ($cmbp_option);
+}
+# ************************ SUBROUTINE DEFINITION *****************************
+#
+# NAME
+#       chomp_mknt_option    -   Parse command line input looking for -cmbp
+#
+# USAGE
+#       STRING chomp_mknt_option @ARGV
+#
+# DESCRIPTION
+#       This routine walks through the ARGV array, looking for the
+#       the -mk option. If found, the argument is removed. It means the
+#       person wants the view tagged in the windows region. We let the calling
+#       routine setup the options properly. The -nt_gpath <nt_view_storage> is
+#       not supported.
+#
+# RETURNS
+#       String returns the mknt option. Blank if the mknt option does not exist.
+#
+sub chomp_mknt_option () {
+
+    #   Private Variable Definitions.
+    #
+    my (@myargv, $dashmk, $mknt_option, $option, $TRUE, $FALSE);
+
+    $TRUE = 1;
+    $FALSE = 0;
+    $dashcmbp = $FALSE;
+    $option = "";
+    $mknt_option = "";
+    @myargv = @ARGV;
+    @ARGV = ();
+
+    #   WHAT:   Walk through the command line parameters.
+    #   WHY:    Looking for -mk. Need to return that option.
+    #
+    foreach $option (@myargv) {
+        #   WHAT:   We found -mknt. Don't put that back into ARGV.
+        #   WHY:    Want to strip out this argument.
+        #           
+        if ($option =~ "-mk") {
+            $dashmk = $TRUE;
+            $mknt_option = $option;
+        }
+        else {
+            $ARGV[$#ARGV + 1] = $option;
+        }
+    }
+    return ($mknt_option);
+}
+# ************************ SUBROUTINE DEFINITION *****************************
+#
+# NAME
+#       umask_ok            -   Process umask, update array, return status.
+#
+# USAGE
+#       BOOLEAN umask_ok PTR UMASK_ARRAY @ARGV
+#
+# DESCRIPTION
+#       This routine walks through the ARGV array, looking for the -u umask
+#       option. If found, the argument is removed. It it also checked to ensure
+#       there is a valid umask value provided. If -u is not found or the umask
+#       provided is ok, then status is returned TRUE (umask_ok). Othewise, FALSE
+#       is returned.
+#
+# RETURNS
+#       umask_ok returns BOOLEAN
+#       umask_array is either blank, or contains -u for the first argument and the
+#           umask for the second argument.
+#
+sub umask_ok (\@) {
+
+    #   WHAT:   Declare private variables for the passed in arguments.
+    #   WHY:    So it's clear.
+    my ($umask_ptr_array) = @_;
+
+    #   Private Variable Definitions.
+    #
+    my (@myargv, $dashu, $umask_option, $option, $TRUE, $FALSE, $returncode);
+    my ($returnval);
+
+    $TRUE = 1;
+    $FALSE = 0;
+    $dashu = $FALSE;
+    $option = "";
+    $umask_option = "";
+    @myargv = @ARGV;
+    @ARGV = ();
+    $returnval = $TRUE;
+
+    #   WHAT:   Walk through the command line parameters.
+    #   WHY:    Looking for -cmbp. Need to return that option.
+    #
+    foreach $option (@myargv) {
+        #   WHAT:   If dashu was found in the previous iteration,
+        #           this option has to be the umask itself. Set
+        #           umask_option variable (e.g. value of umask) and set
+        #           dashu back to FALSE.
+        #   WHY:    We found the umask option and we don't want to set the
+        #           value again on another pass.
+        if ($dashu) {
+            $umask_option = $option;
+            $dashu = $FALSE;
+        }
+        #   WHAT:   We found -u. Set the dashu boolean. Otherwise,
+        #           repopulate the ARGV array, PROVIDED umask_option is NOT
+        #           the current option.
+        #   WHY:    So the next pass of this code, the previous lines
+        #           will pick up the umask value. Also, strip out
+        #           "-u <umask>" from ARGV.
+        if ($option eq "-u") {
+            $dashu = $TRUE;
+        }
+        else {
+            if ($umask_option ne $option) {
+                $ARGV[$#ARGV + 1] = $option;
+            }
+        }
+    }
+    #
+    #   WHAT:   If the umask_option is not blank, -u was provided.
+    #           See if the umask value is valid.
+    #   WHY:    Just a good check to do...
+    #
+    if ($umask_option ne "") {
+        $return_code = system ("/usr/bin/ksh", "-c", "umask $umask_option 2>/dev/null");
+        if ( ($return_code / 256) != $SUCCESS ) {
+            $returnval = $FALSE;
+            print "ERROR: Invalid umask value: $umask_option\n";
+        }
+        if ( $umask_option eq "777" ) {
+            $returnval = $FALSE;
+            print "ERROR: Can not create a view with umask value 777\n";
+        }
+        #   WHAT:   If returnval is still TRUE, then update the umask array
+        #           and return the umask values. The array is setup as the
+        #           umask command which is used in the return routine when
+        #           called by the ksh.
+        #   WHY:    Set the value before creating a view.
+        #
+        if ( $returnval == $TRUE ) {
+            @{$umask_ptr_array}[0] = "umask ";
+            @{$umask_ptr_array}[1] = $umask_option;
+            @{$umask_ptr_array}[2] = ";";
+        }
+    }
+    return ($returnval);
+}
