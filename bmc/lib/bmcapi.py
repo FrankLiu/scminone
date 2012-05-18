@@ -43,9 +43,9 @@ class Loader(object):
 	def getInstance(self): pass
 	
 class XmlLoader(Loader):
-	'''
+	"""
 	XML Configuration for BMC
-	'''
+	"""
 	def __init__(self, insname):
 		self.instancename = os.environ['BMC_HOME']+"/conf/%s.ins"%insname
 		self.logger = logging.getLogger("bmc")

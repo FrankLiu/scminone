@@ -14,7 +14,7 @@ pipe_join_pattern = '|'
 arg_join_pattern  = ' '
 
 def parse(command, *args, **kwargs):
-	logger.info("parse command [{cmd},{args},{kwargs}]".format(cmd=command,args=args,kwargs=kwargs))
+	logger.debug("parse command [{cmd},{args},{kwargs}]".format(cmd=command,args=args,kwargs=kwargs))
 	#put all in one command [ls -l|grep test], will ignore *args and **kwargs
 	cmds = ()
 	if command.find(pipe_split_pattern) > 0:
@@ -32,11 +32,13 @@ def parse(command, *args, **kwargs):
 			cmds.append("{k} {v}".format(k=k,v=v))
 	logger.debug("command includes {len} sub-commands".format(len=len(cmds)))
 	cmds = [cmd.strip() for cmd in cmds]
-	[logger.info("sub-command: {cmd}".format(cmd=cmd)) for cmd in cmds]
-	logger.info("parse command [{cmd}] end.".format(cmd=command))
+	[logger.debug("sub-command: {cmd}".format(cmd=cmd)) for cmd in cmds]
+	logger.debug("parse command [{cmd}] end.".format(cmd=command))
 	return cmds
 
 def parseAsStr(command, *args, **kwargs):
+	if command.find(pipe_split_pattern) > 0:
+		return command
 	cmds = parse(command, *args, **kwargs)
 	return pipe_join_pattern.join(cmds)
 	
@@ -55,21 +57,22 @@ def run(command, *args, **kwargs):
 			run("/mot/proj/wibb_bts/daily/bin/apbuild.ksh", "apbld_tmp-testview", "noWinCleanPkg")
 	"""
 	logger.info("command [%s] start..."%command)
-	cmds = parse(command, *args, **kwargs)
+	command = parseAsStr(command, *args, **kwargs)
 	output = ""
 	try:
-		if len(cmds) == 1:
-			p = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
-		elif len(cmds) == 2:
-			p1 = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
-			p = Popen(arg_split_pattern.split(cmds[1]), stdin=p1.stdout, stdout=PIPE, stderr=STDOUT)
-		else: #len(cmds) >= 3
-			p = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
-			for cmd in cmds[1:len(cmds)-2]:
-				logger.debug("sub-command: {cmd}".format(cmd=cmd))
-				p = Popen(arg_split_pattern.split(cmd), stdin=p.stdout, stdout=PIPE, stderr=PIPE)
-			p = Popen(arg_split_pattern.split(cmds[len(cmds)-1]), stdin=p.stdout, stdout=PIPE, stderr=STDOUT)
-		output = p.communicate()[0]
+		output = Popen(command, stdout=PIPE, stderr=STDOUT, shell=True).communicate()[0]
+		# if len(cmds) == 1:
+			# p = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
+		# elif len(cmds) == 2:
+			# p1 = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
+			# p = Popen(arg_split_pattern.split(cmds[1]), stdin=p1.stdout, stdout=PIPE, stderr=STDOUT)
+		# else: #len(cmds) >= 3
+			# p = Popen(arg_split_pattern.split(cmds[0]), stdout=PIPE, stderr=STDOUT)
+			# for cmd in cmds[1:len(cmds)-2]:
+				# logger.debug("sub-command: {cmd}".format(cmd=cmd))
+				# p = Popen(arg_split_pattern.split(cmd), stdin=p.stdout, stdout=PIPE, stderr=PIPE)
+			# p = Popen(arg_split_pattern.split(cmds[len(cmds)-1]), stdin=p.stdout, stdout=PIPE, stderr=STDOUT)
+		# output = p.communicate()[0]
 		logger.debug("command output:")
 		logger.debug(output.strip())
 	except IOError as e:
