@@ -13,7 +13,7 @@ setup(name='bmc',
       maintainer_email='frank.1.liu@nsn.com',
       url=' ',
       packages=[],
-      long_description="Think about the ideal way to SCM work.",
+      long_description="Think about the efficient way to SCM work.",
       license="Private domain",
       platforms=["any"],
      )
