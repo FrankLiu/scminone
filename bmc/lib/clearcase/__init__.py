@@ -47,27 +47,41 @@ def cleartoolInView(view, command, *args, **kwargs):
 def ctInView(view, command, *args, **kwargs):
 	return cleartoolInView(view, command, *args, **kwargs)
 
-def isViewExist(view):
-	logger.info("check whether view[{view}] exists?".format(view=view))
-	output = cleartool("lsview", "-s", view)
+def isObjectExist(metaType, objectSelector):
+	"""
+	Check whether the given metaType:objectSelector exists
+	metaType should be view,vob,branch,label,lock....
+	"""
+	logger.debug("isObjectExist invoked")
+	logger.info("Check whether {metaType}[{objectSelector}] exists?".format(metaType=metaType,objectSelector=objectSelector))
+	if metaType in ('view','vob','lock'):
+		output = cleartool("ls{metaType}".format(metaType=metaType), "-s", objectSelector)
+	else:
+		output = cleartool("lstype", "-s", "{metaType}:{objectSelector}".format(metaType=metaType,objectSelector=objectSelector))
 	logger.debug(output)
 	if re.search(r'^cleartool: Error', output) is not None:
-		logger.error("View [{view}] not exist".format(view=view))
+		logger.error("{metaType} [{objectSelector}] not exist!".format(metaType=metaType,objectSelector=objectSelector))
 		return False
 	else:
-		logger.info("View [{view}] exist".format(view=view))
+		logger.info("{metaType} [{objectSelector}] exists!".format(metaType=metaType,objectSelector=objectSelector))
 		return True
 		
+def isViewExist(view):
+	return isObjectExist("view", view)
 def isVobExist(vob):
-	logger.info("check whether vob[{vob}] exists?".format(vob=vob))
-	output = cleartool("lsvob", "-s", vob)
-	logger.debug(output)
-	if re.search(r'^cleartool: Error', output) is not None:
-		logger.error("Vob [{vob}] not exist".format(vob=vob))
-		return False
-	else:
-		logger.info("Vob [{vob}] exist".format(vob=vob))
-		return True
+	return isObjectExist("vob", vob)
+def isLockExist(lock):
+	return isObjectExist("lock", lock)
+def isBranchExist(branch, invob):
+	return isObjectExist("brtype", "{branch}@{vob}".format(branch=branch,vob=invob))
+def isLabelExist(label, invob):
+	return isObjectExist("lbtype", "{label}@{vob}".format(label=label,vob=invob))
+def isAttributeExist(attr, invob):
+	return isObjectExist("attype", "{attr}@{vob}".format(attr=attr,vob=invob))
+def isHyperLinkExist(hyperLink, invob):
+	return isObjectExist("hltype", "{hyperLink}@{vob}".format(hyperLink=hyperLink,vob=invob))
+def isTriggerExist(trigger, invob):
+	return isObjectExist("trtype", "{trigger}@{vob}".format(trigger=trigger,vob=invob))
 
 def getViewPath(view):
 	logger.info("get global path for view {view}".format(view=view))
@@ -93,14 +107,17 @@ def getLastVersion(view, product):
 def getLastLabel(view, product):
 	return getLastVersion(view, product)
 
-def mkview(tagorbid, baseline, isDev=True):
-	if isDev:
+def mkview(tagorbid, baseline, isDevBranch=True):
+	logger.info("mkview start")
+	logger.info("="*60)
+	if isDevBranch:
 		logger.info("make dev view with bid {bid} based on {baseline}".format(bid=tagorbid, baseline=baseline))
 		output = cmd.run("{mkview} -bid {bid} -b {baseline}".format(mkview=bmc.config.get('cmbpBin')+"/mkview",bid=tagorbid,baseline=baseline))
 	else:
 		logger.info("make integration view with tag {tag} based on {baseline}".format(tag=tagorbid, baseline=baseline))
 		output = cmd.run("{mkview} -tag {tag} -share_vw -b {baseline}".format(mkview=bmc.config.get('cmbpBin')+"/mkview",tag=tagorbid,baseline=baseline))
-	
+	logger.info("="*60)
+	logger.info("mkview end")
 	
 def mklbtype(lbtype, vob, view):
 	logger.info("create label type: {lbtype}".format(lbtype=lbtype))

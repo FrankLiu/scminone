@@ -10,8 +10,8 @@ logger = logging.getLogger("bmc.command")
 
 pipe_split_pattern = '|'
 arg_split_pattern = re.compile(r'\s+')
-pipe_join_pattern = '|'
-arg_join_pattern  = ' '
+pipe_join_character = '|'
+arg_join_character  = ' '
 
 def parse(command, *args, **kwargs):
 	logger.debug("parse command [{cmd},{args},{kwargs}]".format(cmd=command,args=args,kwargs=kwargs))
@@ -24,7 +24,7 @@ def parse(command, *args, **kwargs):
 	else:
 		logger.debug("command str doesn't includes pipe character ['|']")
 		cmds = list()
-		cmds.append(command + arg_join_pattern + arg_join_pattern.join(args))
+		cmds.append(command + arg_join_character + arg_join_character.join(args))
 		if len(kwargs) == 0:
 			logger.debug("no extra-kwargs given.")
 		for (k,v) in kwargs.items():
@@ -40,7 +40,7 @@ def parseAsStr(command, *args, **kwargs):
 	if command.find(pipe_split_pattern) > 0:
 		return command
 	cmds = parse(command, *args, **kwargs)
-	return pipe_join_pattern.join(cmds)
+	return pipe_join_character.join(cmds)
 	
 def run(command, *args, **kwargs):
 	"""
