@@ -16,4 +16,5 @@ setup(name='bmc',
       long_description="Think about the efficient way to SCM work.",
       license="Private domain",
       platforms=["any"],
+	  depends_on=["cmbp"],
      )

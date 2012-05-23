@@ -8,3 +8,4 @@ Author-email: frank.1.liu@nsn.com
 License: Private domain
 Description: Think about the efficient way to SCM work.
 Platform: any
+Depends-on: CMBP
