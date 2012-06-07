@@ -1,0 +1,47 @@
+#!/usr/bin/ksh
+#
+# -----------------------------------------------------------------------------
+#                     S C R I P T   S P E C I F I C A T I O N
+#                          COPYRIGHT 2007 MOTOROLA INC.
+# -----------------------------------------------------------------------------
+#
+# NAME
+#       myquota     -    Wrapper around the myquota.pl script.
+#
+# REVISION HISTORY
+#       05/22/07    Curt Danielsen      original
+#
+# USAGE
+#       myquota "myquota options"
+#
+# DESCRIPTION
+#       This is simply a wrapper script around the myquota.pl script.
+#
+#
+# **************************** MAIN SCRIPT ************************************
+#
+#
+# ---------------------------- CONSTANT DECLARATION ---------------------------
+#
+# typeset   -r      variable=value
+typeset     -r      FALSE=0
+typeset     -r      TRUE=1
+#
+typeset     -r      SUCCESS=0
+typeset     -r      MYQUOTA="/usr/test/ccrelease/bin/myquota.pl"
+#
+#
+# ---------------------------- VARIABLE DECLARATION ---------------------------
+#
+# typeset   options variable
+typeset             exit_code=${SUCCESS}
+#
+#
+#
+# ---------------------------- SCRIPT -----------------------------------------
+#
+#   WHAT:   Get a list of exported partitions.
+#   WHY:    Looking for the person's view directory.
+#
+perl ${MYQUOTA} $*
+exit ${exit_code}

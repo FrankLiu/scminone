@@ -1,0 +1,361 @@
+#!/bin/env perl
+#
+# Script to analyze a WUCE build log and print out information about the
+# warnings.  The default will just print counts.  You can enable color
+# and more detailed information if you want with the command-line switches.
+#
+# Dave Marotti (cdm093)
+#
+# Date       Version Description of change
+# ---------- ------- ---------------------------------------------------------
+# 11/??/2008 v1.0    Initial creation.
+# 11/19/2008 v1.1    Added the -i option to allow ignoring warnings during the
+#                    counting process.
+#                    Keyed off WUCE's "compile" line instead of "build" line 
+#                    to better categorize which target a warning applied to
+#                    (thanks Matt!).
+##############################################################################
+use strict;
+use File::Basename;
+use IO::File;
+use Getopt::Std;
+use Term::ANSIColor qw(:constants);
+
+use Data::Dumper;
+
+# Keys used in the monster-warnings hash to simulate a data structure
+my $WARNING_COUNT_KEY = "X__WCK__X";
+my $PRODUCT_KEY = "X__PK__X";
+my $FUNC_AREAS_KEY = "X__FAK__X";
+my $TARGETS_KEY = "X__TGTK__X";
+my $WARNINGS_KEY = "X__WRNK__X";
+my $FILES_KEY = "X__FLSK__X";
+
+my $VERSION = "1.2";
+
+# Command line option toggles
+my $optDebugMode = 0;
+my $optUseColor = 0;
+my $optShowWarnings = 0;
+my $optShowWarningsRegexp = "^\$";
+my $optTargetRegexp = ".*";
+my $optIgnoreRegexp = "";
+
+# The list of SPCF directories that WUCE looks for (from lspcf)
+my @spcfDirs;
+
+# The actual warnings hash of hashes of hashes of
+my %warnings;
+
+
+##############################################################################
+# Changes the oil.
+##############################################################################
+sub printUsage {
+  my $progName = basename($0);
+
+  print("WUCE Build Warning Counter v$VERSION (send questions to cdm093\@email.mot.com)\n\n");
+  print($progName . " [-cdh] [-t targetPattern] [-w targetPattern] log1 ... logn\n");
+  print("Usage: Parses and displays a summary of warning information for OMP4G builds.\n\n");
+  print("    -c               Display output using color.\n");
+  print("    -d               Debug mode - dumps lots of crap.\n");
+  print("    -h               Displays this help.\n");
+  print("    -i ignorePattern Ignores any warnings matching this pattern\n");
+  print("    -t targetPattern Only process targets that match this pattern\n" .
+        "                     (default is .*).\n");
+  print("    -w targetPattern Display detailed warning information per matching target.\n");
+  print("                     which matches targetPattern.\n");
+  print("\nThis tool should be run with a view set for the build log being\n" .
+        "analyzed, though it is not required.  It parses some WUCE files as well\n".
+        "as the SPCF files to obtain FA information.\n");
+  print("\nBy default, simply running $progName will generate a count of all\n" .
+        "warnings for all products, FAs, and targets which it can find in the\n" .
+        "supplied logs.  This behavior can further be modified by use of the\n" .
+        "-t and -w flags.\n" .
+        "\n" .
+        "The -t flag will trim down the output to only display results for target\n" .
+        "names which match the specified regular expression while use of the -w\n" .
+        "flag will generate more output about any target names which match the\n" .
+        "specified regular expression.\n" .
+        "\n");
+  print("Example: Count the number of GPST and IMP warnings\n" .
+        "\t$progName -t '(gpst|imp)' /mot/proj/wibb_bts/daily/WMX-AP_R2.5.2_BLD-20.11.01/band_isdlinux_and_isdlinux_modem.log\n\n");
+  print("Example: Count all errors and display detailed warnings only for dds\n" .
+        "\t$progName -w dds /mot/proj/wibb_bts/daily/WMX-AP_R2.5.2_BLD-20.11.01/band_isdlinux_and_isdlinux_modem.log\n\n");
+  print("Example: Count all errors, display detailed warnings for GPST, ignore HAP-generated include warnings\n" .
+        "\t$progName -w gpst -i '^/vob/haprel_r3' /mot/proj/wibb_bts/daily/WMX-AP_R2.5.2_BLD-20.11.01/band_isdlinux_and_isdlinux_modem.log\n\n");
+
+  exit(1);
+}
+
+
+##############################################################################
+# Bakes a cake.
+##############################################################################
+sub parseArgs {
+  my %options=();
+  getopts("cdt:w:i:h", \%options);
+
+  printUsage if defined $options{h};
+
+  $optDebugMode=1 if defined $options{d};
+  $optUseColor=1 if defined $options{c};
+  $optShowWarnings=1 if defined $options{w};
+  $optShowWarningsRegexp=$options{w} if defined $options{w};
+  $optTargetRegexp=$options{t} if defined $options{t};
+  $optIgnoreRegexp=$options{i} if defined $options{i};
+}
+
+##############################################################################
+# analyzeLog($fileHandle)
+#
+# Reads a log and analyzes the warnings, keeping track of the current
+# product name, functional area, and target.
+##############################################################################
+sub analyzeLog {
+  my $logName = shift;
+  my $fh = new IO::File($logName, "r") or die("Could not open $logName\n");
+
+  my $curTarget = "UNKNOWN TARGET";
+  my $curProduct = "UNKNOWN PRODUCT";
+  my $curFA = "UNKNOWN FA";
+
+  my $WUCE_APP_CFG_PATTERN="WUCE_APP_CFG=.*-([^-]+)-.*";
+
+  %warnings = ();
+
+  while(<$fh>) {
+    chomp();
+    my $line = $_;
+
+    # Locate the current product name so we know what to look for in the SPCFs
+    if($line =~ m/$WUCE_APP_CFG_PATTERN/) {
+      $curProduct = $1;
+
+      print("Product Name: $curProduct\n") if $optDebugMode==1;
+    }
+    # Locate the current target
+    elsif($line =~ m/wuce: compile \w+ target "([^"]+)"\./ ||
+          $line =~ m/wuce: build target "([^"]+)"\./) {
+      $curTarget = $1;
+
+      # ignore vxmod targets or targets with dots in them (gpst.clean, etc)
+      if($curTarget ne "vxmod" && $curTarget =~ /^[^\.]+$/ &&
+        $curTarget =~ /$optTargetRegexp/) {
+        $curFA = getFAForTarget($curTarget, $curProduct);
+
+        print "FA:'$curFA' found for tgt:'$curTarget', curProduct:'$curProduct'\n" if $optDebugMode==1;
+      }
+      else {
+        $curTarget = "";
+        $curFA = "";
+      }
+    }
+    # WARNINGS!
+    #
+    # GCC Warnings: ([^:]+):(\d+[:\d]*): warning: (.+)
+    # DIAB Warnings: ^\"([^\"]+)\", line ([\d]+): warning \(dcc:\d+\): (.*)$
+    #
+    # Only process if:
+    #  1: $curTarget has text
+    #  2: $curTarget matches the target filter (specified by -t, default .*)
+    #  3: The line matches the GCC or DIAB warning style
+    elsif(length($curTarget)>0 &&
+          $curTarget =~ /$optTargetRegexp/ &&
+          ($line =~ m/([^:]+):(\d+[:\d]*): warning: (.+)/ ||
+           $line =~ m/^\"([^\"]+)\", line ([\d]+): warning \(dcc:\d+\): (.*)$/)) {
+      my ($fileName, $lineNum, $warning) = ($1, $2, $3);
+
+      # Test if this warning matches the ignore-regexp
+      if(length($optIgnoreRegexp)==0 ||
+         not $line =~ /$optIgnoreRegexp/) {
+        $fileName =~ s/^\.\///;
+
+        addWarningCounts($curProduct, $curFA, $curTarget, $fileName);
+        addWarningType($curProduct, $curFA, $curTarget, $fileName, $lineNum, $warning);
+      }
+    }
+    # WARNINGS!
+    #
+    # GNU LD Linker Warnings: ^.*ld: warning: (.*)$
+    elsif(length($curTarget)>0 &&
+          $curTarget =~ /$optTargetRegexp/ &&
+          ($line =~ m/^.*(ld): warning: (.*)$/ ||
+          $line =~ m/^.*(cc1plus): warning: (.*)$/)) {
+      my ($fileName, $lineNum, $warning) = ($curTarget, $1, $2);
+
+      if(length($optIgnoreRegexp)==0 ||
+         not $line =~ /$optIgnoreRegexp/) {
+
+        addWarningCounts($curProduct, $curFA, $curTarget, $fileName);
+        addWarningType($curProduct, $curFA, $curTarget, $fileName, $lineNum, $warning);
+      }
+    }
+  }
+
+  printWarningTree($logName);
+
+  $fh->close();
+}
+
+
+##############################################################################
+# addWarningType
+#
+# Adds a warning if it matches the target pattern.
+##############################################################################
+sub addWarningType {
+  my ($curProduct, $curFA, $curTarget, $fileName, $lineNum, $warning) = @_;
+
+  push( @{ $warnings{PRODUCT_KEY}{$curProduct}{FUNC_AREAS_KEY}{$curFA}{TARGETS_KEY}{$curTarget}{FILES_KEY}{$fileName}{WARNINGS_KEY} }, "[$lineNum] $warning") if($curTarget =~ /$optShowWarningsRegexp/);
+}
+
+
+##############################################################################
+# addWarningCounts()
+#
+# Adds warnings for products/FAs/targets/files
+##############################################################################
+sub addWarningCounts {
+  my ($curProduct, $curFA, $curTarget, $fileName) = @_;
+
+  $warnings{PRODUCT_KEY}{$curProduct}{WARNING_COUNT_KEY}++;
+  $warnings{PRODUCT_KEY}{$curProduct}{FUNC_AREAS_KEY}{$curFA}{WARNING_COUNT_KEY}++;
+  $warnings{PRODUCT_KEY}{$curProduct}{FUNC_AREAS_KEY}{$curFA}{TARGETS_KEY}{$curTarget}{WARNING_COUNT_KEY}++;
+  $warnings{PRODUCT_KEY}{$curProduct}{FUNC_AREAS_KEY}{$curFA}{TARGETS_KEY}{$curTarget}{FILES_KEY}{$fileName}{WARNING_COUNT_KEY}++;
+}
+
+
+##############################################################################
+# printWarningTree($fileName)
+#
+# Prints a tree of warnings, optionally colored.
+##############################################################################
+sub printWarningTree {
+  my ($fileName) = @_;
+
+  print("\nWUCE Build Warning Counter v$VERSION (send questions to cdm093\@email.mot.com)\n");
+  print("Warning Summary for $fileName\n");
+  print("Target Filter = $optTargetRegexp\n");
+  print("Warning Ignore Pattern = $optIgnoreRegexp\n");
+  print("This script knows about GCC, DIAB, cc1plus, and GNU-LD style warnings. All others ignored.\n");
+  print("\n(if no warning tree is printed, that indicates no warnings were detected)\n\n");
+
+  foreach my $prodKey ( sort keys %{ $warnings{PRODUCT_KEY} } ) {
+    if($optUseColor==0) {
+      print "+- " . $prodKey . " [" . $warnings{PRODUCT_KEY}{$prodKey}{WARNING_COUNT_KEY} . "]\n";
+    }
+    else {
+      print "+- " . BOLD YELLOW . $prodKey . RESET . " [" . CYAN . $warnings{PRODUCT_KEY}{$prodKey}{WARNING_COUNT_KEY} . RESET . "]" . "\n";
+    }
+
+    foreach my $faKey ( sort keys %{ $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY} } ) {
+      print "|  |\n";
+
+      if ($optUseColor==0) {
+        print "|  +- " . $faKey . " [" . $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY}{$faKey}{WARNING_COUNT_KEY} . "]\n";
+      } else {
+        print "|  +- " . BOLD YELLOW . $faKey . RESET . " [" . CYAN . $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY}{$faKey}{WARNING_COUNT_KEY} . RESET . "]" . "\n";
+      }
+
+      foreach my $tgtKey ( sort keys %{ $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY}{$faKey}{TARGETS_KEY} } ) {
+        if ($optUseColor==0) {
+          print "|  |  +- " . $tgtKey . " [" . $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY}{$faKey}{TARGETS_KEY}{$tgtKey}{WARNING_COUNT_KEY} . "]\n";
+        } else {
+          print "|  |  +- " . BOLD WHITE . $tgtKey . RESET . " [" . CYAN . $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY}{$faKey}{TARGETS_KEY}{$tgtKey}{WARNING_COUNT_KEY} . RESET . "]" . "\n";
+        }
+
+        if($tgtKey =~ /$optShowWarningsRegexp/) {
+          foreach my $fileKey ( keys %{ $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY}{$faKey}{TARGETS_KEY}{$tgtKey}{FILES_KEY} } ) {
+            if ($optUseColor==0) {
+              print "|  |  |  +- " . $fileKey . " [" . $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY}{$faKey}{TARGETS_KEY}{$tgtKey}{FILES_KEY}{$fileKey}{WARNING_COUNT_KEY} . "]\n";
+            } else {
+              print "|  |  |  +- " . WHITE . $fileKey . RESET . " [" . CYAN . $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY}{$faKey}{TARGETS_KEY}{$tgtKey}{FILES_KEY}{$fileKey}{WARNING_COUNT_KEY} . RESET . "]" . "\n";
+            }
+
+            foreach my $warning ( @{ $warnings{PRODUCT_KEY}{$prodKey}{FUNC_AREAS_KEY}{$faKey}{TARGETS_KEY}{$tgtKey}{FILES_KEY}{$fileKey}{WARNINGS_KEY} } ) {
+              if ($optUseColor==0) {
+                print "|  |  |  |  +- " . $warning . "\n";
+              } else {
+                print "|  |  |  | +- " . BOLD BLACK . $warning . RESET . "\n";
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+##############################################################################
+# parseSpcfDirs
+#
+# Parses the SPCF directories out of the lspcf binary from WUCE.
+##############################################################################
+sub parseSpcfDirs {
+  my $line;
+
+  if(-e "/vob/wuce/wuce/bin/lspcf") {
+    $line = `grep \\*\\.spcf /vob/wuce/wuce/bin/lspcf | tail -n 1`;
+    my @dirs = split(/ /, $line);
+
+    # the first element will be "cat" so get rid of it
+    shift @dirs;
+
+    # strip the rest of "/*.spcf"
+    foreach my $dir (@dirs) {
+      $dir =~ s/\/\*\.spcf//;
+      push(@spcfDirs, $dir);
+    }
+  }
+}
+
+
+##############################################################################
+# getFAForTarget($target, $productName)
+#
+# Converts a target/productName into a functional area.
+##############################################################################
+sub getFAForTarget {
+  my ($target, $prodName) = @_;
+
+  my $fa = "UNKNOWN FA";
+  my $spcfFile = "/mooses/cannot/be/here";
+
+  # locate the appropriate SPCF file from the list of known VOB sources
+  foreach my $vob (@spcfDirs) {
+    $spcfFile = "$vob/$prodName.spcf" if (-e "$vob/$prodName.spcf");
+  }
+
+  if(-e $spcfFile) {
+    $fa = `grep "$target" $spcfFile | grep -v "^[ ]*#" | cut -d: -f4 | tail -n 1`;
+    chomp($fa);
+  }
+
+  if($fa =~ /^[ ]*$/) {
+    $fa = "UNKNOWN FA";
+  }
+
+  return $fa;
+}
+
+
+#------------------------------------------------------------------------------
+# Main program entry
+#------------------------------------------------------------------------------
+
+parseArgs();
+
+if(scalar(@ARGV) == 0) {
+  printUsage();
+}
+
+parseSpcfDirs();
+
+# process all files
+while(scalar(@ARGV)>0) {
+  analyzeLog($ARGV[0]);
+  shift;
+}
+

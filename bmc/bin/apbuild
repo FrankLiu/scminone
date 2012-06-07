@@ -1,0 +1,304 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import re
+import filecmp
+import logging
+import logging.config
+from optparse import OptionParser
+import utils
+
+try:
+	from cStringIO import StringIO
+catch ImportError:
+	from StringIO import StringIO
+
+
+def current_path():
+	return os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+def append_sys_path(path):
+  """Fix the sys.path to include our paths."""
+  sys.path.insert(0, path)
+  
+#append lib path
+curdir=current_path()
+BMC_HOME=curdir+"/.."
+os.environ['BMC_HOME'] = BMC_HOME
+append_sys_path(BMC_HOME+'/lib')
+import bmcapi as bmc
+import command
+import clearcase
+
+logging.config.fileConfig(BMC_HOME+"/conf/logging.conf")
+logger = logging.getLogger("apbuild")
+
+#Load bmc configuration
+logger.info("Load bmc configuration...")
+execfile(BMC_HOME+"/conf/bmc.conf", bmc.config)
+logger.info("="*60)
+logger.info("CMBP: ".rjust(15) + bmc.config.get('CMBP_HOME'))
+logger.info("WUCE: ".rjust(15) + bmc.config.get('WUCE_HOME'))
+logger.info("="*60)
+
+logger.info("Start AP Build process...")
+logger.info(command.run("date"))
+logger.info(command.run("uname -a"))
+
+#parse arguments, provider 'test' option
+parser = OptionParser()
+parser.add_option("-t", "--test", dest="test", action="store_true", default=False, help="test option, just kick off a build, no label.")
+parser.add_option("-e", "--emake", dest="emake", action="store_true", default=False, help="emake option, if not set, will run with clearmake.")
+parser.add_option("-h", "--help", action="help")
+(options, args) = parser.parse_args()
+
+#-----------------------------------------------------------------------
+# first pass
+name = "apbuild"
+view = clearcase.ct("pwv -short")
+os.environ["PATH"] = "/apps/vendor/bin:/usr/bin:/bin:/etc:/sbin:/usr/sbin:/usr/atria/bin:.:/vob/wuce/wuce/bin"
+
+# second pass
+builddir = "/vob/wibb_bts/bld"
+cmbplabel = command.run("cmbp_label dapsc")
+cmbplabelprev = command.run("cmbp_label_prevbld dapsc")
+sysrel = command.run("cat {builddir}/wuce/ver/sysrel".format(builddir=builddir))
+prod_fa_dir = "/mot/proj/wibb_bts/daily/R{sysrel}".format(sysrel=sysrel)
+baseline = command.run("lb1bl1CMBP1add1 dapsc")
+mailto = "frank.1.liu@nsn.com"
+#mailto = "frank.q.wang@nsn.com yong.zheng@nsn.com gary.du@nsn.com guang_sheng.xu@nsn.com linda.shang@nsn.com frank.1.liu@nsn.com tomas.lu@nsn.com"
+spblabel = command.run("spb_label dapsc")
+
+#run with test option
+if getattr(options, 'test') == True:
+	cmbplabel = cmbplabel + ".TEST"
+	
+# third pass
+logdir = prod_fa_dir + "/" + cmbplabel
+configspecf = logdir + "/" + cmbplabel + ".cs"
+mklabellog = logdir + "/" + cmbplabel + ".mklabel"
+buildlog = logdir + "/" + name + ".log"
+bsflog = logdir + "/" + name + ".bsf"
+buildmail = logdir + "/" + name + ".mail"
+os.umask(0002)
+if not os.path.exists(logdir): os.makedirs(logdir, 0775)
+os.utime(mklabellog, None)
+
+#----------------------------------------------------------------------
+#check label
+def check_label(label):
+	output = clearcase.ct("lstype lbtype:{label}@/vob/wibb_bts 2>&1".format(label=label))
+	if not re.search(r'^cleartool: Error', output):
+		subject = "Label {label} exists".format(label=label)
+		message = subject
+		utils.sendmail(bmc.config.get("MAILFROM"), mailto, subject, message)
+		raise Exception(message)
+		
+#----------------------------------------------------------------------
+#check branch
+def check_branch(view, target=clearmake):
+	smartbuilddir="/mot/proj/wibb_bts/daily/tmpsmartbuild/{view}".format(view=view)
+	os.umask(0002)
+	if not os.path.exists(smartbuilddir): os.makedirs(smartbuilddir, 0775)
+	os.utime(smartbuilddir+"/prev_cs_"+target,None)
+	os.utime(smartbuilddir+"/prev_cr_"+target,None)
+	
+	# Compare config spec. If identical, exit 0; else non-zero
+	prevcs=smartbuilddir+"/prev_cs_"+target
+	currcs=smartbuilddir+"/curr_cs_"+target
+	clearcase.ct("catcs -tag {view} > {currcs}".format(view=view,currcs=currcs))
+	csdiff = filecmp.cmp(prevcs,currcs)
+	
+	# Compare CR list. If identical, exit 0; else non-zero
+	prevcr=smartbuilddir+"/prev_cr_"+target
+	currcr=smartbuilddir+"/curr_cr_"+target
+	command.run(". {scstart} wibb_bts".format(scstart=bmc.config.get("scstart")))
+	clearcase.ctInView("{mergestat} -a|grep -E '.*yes.*yes.*|.*no.*yes.*' > {currcr}".format(mergestat=bmc.config.get("mergestat"),currcr=currcr))
+	crdiff = filecmp.cmp(prevcr,currcr)
+
+	# Update the log entry
+	os.rename(currcs,prevcs)
+	os.rename(currcr,prevcr)
+	
+	# If both config spec and merged CR log are unchanged, then exit 0; else, exit 1.
+	if not (csfiff and crdiff):
+		logger.warn("Nightly build under view {view} for {target} was not kicked off because there's no change to the code or config spec.".format(view=view, target=target))
+		subject = "Nightly build under view {view} for {target} was not kicked off because there's no change to the code or config spec.".format(view=view, target=target)
+		message = subject
+		utils.sendmail(bmc.config.get("MAILFROM"), mailto, subject, message)
+		raise Exception(message)
+		
+#----------------------------------------------------------------------
+# build software
+clearcase.ct("setcs -current")
+configspecs = []
+configspecs.append("# DO NOT REBUILD WITH THIS CONFIG SPEC.")
+configspecs.append("# ")
+configspecs.append("# This is a historical config spec, not intended for rebuilding.  If you need")
+configspecs.append("# to rebuild from this build version, then create a new view with one of these")
+configspecs.append("# CMBP mkview commands.")
+configspecs.append("# ")
+configspecs.append("#   mkview -bid <bugzilla-id> -b ${CMBP_LABEL}")
+configspecs.append("#   mkview -tag <view-name> -b ${CMBP_LABEL}")
+configspecs.append("# ")
+with open(configspecf, 'w+') as f:
+	f.writelines(configspecs)
+command.run("cleartool catcs >> {csf}".format(csf=configspecf))
+
+os.chdir(builddir)
+
+# V: only reuse derived objects from this view (no winkin)
+# k: keep going if a target fails
+# v: list dependency reason for rebuilt targets
+if getattr(options, 'test') == False:
+	subject = "Started Nightly build under view {view} with label {label}.".format(view=view,label=cmbplabel)
+	message = subject
+	utils.sendmail(bmc.config.get("MAILFROM"), mailto, subject, message)
+#build with emake
+if getattr(options, 'emake') == True:
+	bulidcmd = 'wucemake /vob/wuce/wuce/bin/wbld -C emake -C nodebug -C strip -k'
+#build with clearmake
+else: 
+	buildcmd = '/vob/wuce/wuce/bin/wbld -C nodebug -C strip -k'
+buildtgt = "dapmodem dapmodem.pkg dapmodem.rel dapsc_linux.clean dapsc_linux dapsc dapsc.pkg dapsc.rel apsac_linux.clean apsac_linux apsac apsac.pkg apsac.rel"
+if float(sysrel) >= 5.0:
+	buildtgt = buildtgt + " apprecheck.pkg apprecheck.rel"
+logger.debug("nohup time {bc} {bt} > {log} 2>&1".format(bc=buildcmd,bt=buildtgt,log=buildlog))
+command.run("nohup time {bc} {bt} > {log} 2>&1".format(bc=buildcmd,bt=buildtgt,log=buildlog))
+		
+#----------------------------------------------------------------------
+# report errors
+
+# find interesting results
+# when this count changes, also update /vob/wuce/wuce/bin/r2bsf1
+command.run("r2bsf1 -f {log} -p aps | sed '1,/listed by target/d' > {bsf}".format(log=buildlog, bsf=bsflog))
+bsfcount = command.run("wc -l {bsf} | awk '{print $1}' | sed 's% %%g'".format(bsf=bsflog))
+
+#----------------------------------------------------------------------
+# report warnings
+
+# find interesting results
+warningcount = command.run("warning_count {log}|awk '{print $1}'|sed 's% %%g'".format(log=buildlog))
+
+#-----------------------------------
+# compose email in parts
+mailstr = StringIO()
+def mail_header()
+{
+	print >>mailstr, '''
+WUCE Automated Build Report
+
+This mail contains information about the DAP Site Controller, DAP Modem,
+CRs Integrated to Baseline, Labels for This Build, Build Details, and
+Build Failures.	
+	'''
+}
+
+def mail_append()
+{
+	
+}
+
+def mail_footer()
+{
+	
+}
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+DAP Site Controller
+
+file: ${LOGDIR}/dapsc.tgz
+md5sum: `md5sum ${LOGDIR}/dapsc.tgz |awk '{print $1}'`
+cksum: `cksum ${LOGDIR}/dapsc.tgz |awk '{print $1, $2}'`
+
+Attempted targets:
+EOF
+
+# should eventually parse error log to group these by product and
+# component
+lspcf -P dapsc -t |fmt -w 72 >> ${LOGDIR}/${NAME}.mail
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+DAP Modem
+
+file: ${LOGDIR}/dapmodem.tgz
+md5sum: `md5sum ${LOGDIR}/dapmodem.tgz |awk '{print $1}'`
+cksum: `cksum ${LOGDIR}/dapmodem.tgz |awk '{print $1, $2}'`
+
+Attempted targets:
+EOF
+
+# should eventually parse error log to group these by product and
+# component
+lspcf -P dapmodem -t |fmt -w 72 >> ${LOGDIR}/${NAME}.mail
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+Labels for This Build
+
+CMBP label: ${CMBP_LABEL}
+Use this label in a config spec, to refer to versions used by this
+build.  This label applies to /vob/wibb_bts.
+
+SPB label: ${SPB_LABEL}
+This label is not currently used.
+EOF
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+Build Details
+
+date: `date`
+disk: `cd ${LOGDIR}; /bin/df -h . | tail -1 |awk '{print $3, "remaining,", $4, "full"}'`
+host: `hostname`
+time: `grep elapsed ${LOGDIR}/${NAME}.log |tail -1 |awk '{print $3}' |sed 's%elapsed%%'`
+user: `whoami`
+view: ${VIEW}
+
+Complete build log:
+${LOGDIR}/${NAME}.log
+EOF
+
+if [ "${WARNING_COUNT}" != "0" ]; then
+  echo "Please clean up ${WARNING_COUNT} unique compiler warnings." >> ${LOGDIR}/${NAME}.mail
+fi
+
+#-----------------------------------
+# mail interesting results
+
+if [[ -s ${LOGDIR}/${NAME}.bsf ]]; then
+  echo >> ${LOGDIR}/${NAME}.mail
+  echo "----------------------------------------" >> ${LOGDIR}/${NAME}.mail
+  echo "Build Failures" >> ${LOGDIR}/${NAME}.mail
+  echo >> ${LOGDIR}/${NAME}.mail
+  r2bsf1 -f ${LOGDIR}/${NAME}.log -p aps >> ${LOGDIR}/${NAME}.mail
+fi
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+Automated Build Log Analysis
+
+EOF
+
+/home/cjc040/bin/crutch ${LOGDIR}/${NAME}.log >> ${LOGDIR}/${NAME}.mail
+
+mail -s "${CMBP_LABEL}: ${BSF_COUNT} build script failure$s for ${NAME}" ${MAILTO} < ${LOGDIR}/${NAME}.mail
+
+print
+	
+logger.info(command.run("date"))
+logger.info("End AP Build process.")
+
+
+
