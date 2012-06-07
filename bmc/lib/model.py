@@ -39,7 +39,7 @@ class Action(object):
 		self.kwargs = kwargs
 	
 	def __str__(self):
-		return "Action{name:%}"%(self.name)
+		return "Action{name:%s}"%(self.name)
 		
 class Step(object):
 	'''
