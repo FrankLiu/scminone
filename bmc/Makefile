@@ -14,6 +14,7 @@ ahftp_dir=ftp://isdlinux4.americas.nsn-net.net/bmc
 clean:
 	@echo "cleanup ${name} ..."
 	rm -rf ${target}/${name}.tar.gz
+	rm -rf lib/*.pyc
 	
 package: 
 	@echo "package ${name} ${version}"
