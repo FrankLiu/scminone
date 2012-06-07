@@ -24,35 +24,35 @@
   	<step sn="sUpdateNBVer" sTool="noUse" sType="atomic" sTarget="sUpdateNBVer"/>
   	<step sn="sLockTargetIntBr" sTool="noUse" sType="atomic" sTarget="sLockTargetIntBr"/>
   	<step sn="sCreateBldLb" sTool="noUse" sType="atomic" sTarget="sCreateBldLb">
-		<condition cn="cCheckState" pattern="created"/>
-		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
-		<condition cn="cCheckBldView" pattern="noUse"/>
+		<pre-action cn="cCheckState" args="created"/>
+		<pre-action cn="cCheckLogDir" args="baseIntLbDir"/>
+		<pre-action cn="cCheckBldView"/>
 	</step>
   	<step sn="sLabelTargetIntBr" sTool="noUse" sType="atomic" sTarget="sLabelTargetIntBr">
-		<condition cn="cCheckState" pattern="createdBldLb"/>
-		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
-		<condition cn="cCheckTargetIntBr" pattern="Locked"/>
-		<condition cn="cCheckBldView" pattern="noUse"/>
+		<pre-action cn="cCheckState" args="createdBldLb"/>
+		<pre-action cn="cCheckLogDir" args="baseIntLbDir"/>
+		<pre-action cn="cCheckTargetIntBr" args="Locked"/>
+		<pre-action cn="cCheckBldView" args="noUse"/>
 	</step>
 	<step sn="sMkPrjDevPrjInt" sTool="noUse" sType="atomic" sTarget="sMkPrjDevPrjInt"/>
 	<step sn="sIncreNBVer" sTool="noUse" sType="atomic" sTarget="sIncreNBVer"/>
 	<step sn="sGenCrStat" sTool="noUse" sType="atomic" sTarget="sGenCrStat"/>
   	<step sn="sGrantOkMergeToInt" sTool="noUse" sType="atomic" sTarget="sGrantOkMergeToInt"/>
   	<step sn="sMergeIntToRelMain" sTool="noUse" sType="atomic" sTarget="sMergeIntToRelMain">
-		<condition cn="cCheckState" pattern="created|baselinedBld|built|sanitized"/>
-		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
-		<condition cn="cCheckTargetIntBr" pattern="Locked"/> 
-		<condition cn="cCheckOkToMergeOnRelMain" pattern="Ok_to_merge"/> 
-		<condition cn="cCheckRelView" pattern="noUse"/>
+		<pre-action cn="cCheckState" args="created|baselinedBld|built|sanitized"/>
+		<pre-action cn="cCheckLogDir" args="baseIntLbDir"/>
+		<pre-action cn="cCheckTargetIntBr" args="Locked"/> 
+		<pre-action cn="cCheckOkToMergeOnRelMain" args="Ok_to_merge"/> 
+		<pre-action cn="cCheckRelView"/>
 	</step>
   	<step sn="sCreateRelLb" sTool="noUse" sType="atomic" sTarget="sCreateRelLb">
-		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
-		<condition cn="cCheckRelView" pattern="noUse"/>
+		<pre-action cn="cCheckLogDir" args="baseIntLbDir"/>
+		<pre-action cn="cCheckRelView" args="noUse"/>
 	</step>
   	<step sn="sLabelRelMain" sTool="noUse" sType="atomic" sTarget="sLabelRelMain">
-		<condition cn="cCheckState" pattern="createdRelLb"/>
-		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
-		<condition cn="cCheckRelView" pattern="noUse"/>
+		<pre-action cn="cCheckState" args="createdRelLb"/>
+		<pre-action cn="cCheckLogDir" args="baseIntLbDir"/>
+		<pre-action cn="cCheckRelView"/>
 	</step>
 	<step sn="sMkPrjDevPrjScm" sTool="noUse" sType="atomic" sTarget="sMkPrjDevPrjScm"/>
   	<step sn="sBlReport" sTool="noUse" sType="atomic" sTarget="sBlReport"/>

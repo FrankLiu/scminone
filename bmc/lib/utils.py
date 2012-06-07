@@ -183,22 +183,22 @@ class _EmailMessage:
     
     def send(self):
         try:
-            import webapi
+            import bmcapi
         except ImportError:
-            webapi = Storage(config=Storage())
+            bmcapi = Storage(config=Storage())
             
         for k, v in self.headers.iteritems():
             self.message.add_header(k, v)
             
         message_text = self.message.as_string()
     
-        if webapi.config.get('smtp_server'):
-            server = webapi.config.get('smtp_server')
-            port = webapi.config.get('smtp_port', 0)
-            username = webapi.config.get('smtp_username') 
-            password = webapi.config.get('smtp_password')
-            debug_level = webapi.config.get('smtp_debuglevel', None)
-            starttls = webapi.config.get('smtp_starttls', False)
+        if bmcapi.config.get('SMTP_SERVER'):
+            server = bmcapi.config.get('SMTP_SERVER')
+            port = bmcapi.config.get('smtp_port', 0)
+            username = bmcapi.config.get('smtp_username') 
+            password = bmcapi.config.get('smtp_password')
+            debug_level = bmcapi.config.get('smtp_debuglevel', None)
+            starttls = bmcapi.config.get('smtp_starttls', False)
 
             smtpserver = smtplib.SMTP(server, port)
 
@@ -216,7 +216,7 @@ class _EmailMessage:
             smtpserver.sendmail(self.from_address, self.recipients, message_text)
             smtpserver.quit()
         else:
-            sendmail = webapi.config.get('sendmail_path', '/usr/sbin/sendmail')
+            sendmail = bmcapi.config.get('sendmail_path', '/usr/sbin/sendmail')
         
             assert not self.from_address.startswith('-'), 'security'
             for r in self.recipients:

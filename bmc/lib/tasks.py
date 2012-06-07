@@ -26,26 +26,7 @@ def cCheckDDirDS(dailyDir, limit):
 def cCheckLogDir(logDir, limit):
 	pass
 
-#check if the branch is locked
-def isBranchLocked(brtype):
-	pass
 
-#get next build version
-def getNextBuildVersion(ins):
-	nbView = ins.getNBView()
-	
-#update nightly build version
-def updateNBVer(ins):
-	nbView = ins.getNBView()
-
-#check whether the label exists or not
-def cCheckLabel(label):
-	pass
-#check whether the given branches/config-spec is changed in nightly build view
-def cCheckBranches(instance):
-	passs
-	
-	
 """
 Create a branch based on the given baseline.
 This can be used for feature branch creation, mainline branch creation and patch branch creation.

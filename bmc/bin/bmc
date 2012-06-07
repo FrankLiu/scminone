@@ -23,6 +23,7 @@ append_sys_path(BMC_HOME+'/lib')
 import bmcapi as bmc
 import executor
 import clearcase
+import command
 
 logging.config.fileConfig(BMC_HOME+"/conf/logging.conf")
 logger = logging.getLogger("bmc")
@@ -48,7 +49,6 @@ def parse_args():
 	if getattr(options, 'instance') == None:
 		parser.error("Instance not provider!")
 	return (options, args)
-
 
 def check_python_version():
 	if not hasattr(sys, 'version_info'):
@@ -78,13 +78,34 @@ def main():
 	logger.info("instance: %s" % insname)
 	load_env(bmc.config)
 	instance = bmc.XmlLoader(insname).getInstance()
+	
+	logger.info("==============================test executor=====================================")
 	e = executor.Executor(instance)
-	e.runCommand("ls -l | tail -1 | grep test")
-	e.runTask("cCheckView", "cwnj74_wimax_cosim")
-	e.runCleartool("lsview  -s cwnj74_wimax_cosim", tail="-1")
-	clearcase.getViewPath("cwnj74_wimax_cosim")
-	clearcase.getLastLabel("apbld_tmp-wmx50-build-test", "apsac")
-	clearcase.getNextLabel("apbld_tmp-wmx50-build-test", "apsac")
+	e.runTask("cCheckView", "apbld_tmp-wmx50-build-test")
+	e.runStep("testls")
+	command.run("ls -l | tail -1 | grep test")
+	logger.info("==============================test parse label=====================================")
+	clearcase.parseLabel('WMX-AP_R2.5.2_BLD-1.01.00')
+	clearcase.parseLabel('WMX-AP_R3.0.1_BLD-1.15.00')
+	clearcase.parseLabel('WMX-AP_R4.0_BLD-1.15.00')
+	clearcase.parseLabel('WMX-AP_R5.0_BLD-45.01.00')
+	clearcase.parseLabel('OPENR6-AP_R5.0_BLD-45.01.00')
+	clearcase.parseLabel('WMX-AP_R5.0_BLD-45.01.00.SCMTEST')
+	logger.info("==============================test cleartool=====================================")
+	clearcase.ct("lsview  -s apbld_tmp-wmx50-build-test", tail="-1")
+	clearcase.getViewPath("apbld_tmp-wmx50-build-test")
+	clearcase.getLastLabel("apbld_tmp-wmx50-build-test", "dapsc")
+	clearcase.getNextLabel("apbld_tmp-wmx50-build-test", "dapsc")
+	clearcase.getNextBaselineLabel("apbld_tmp-wmx50-build-test", "dapsc")
+	clearcase.getIntegrationBranch("apbld_tmp-wmx50-build-test", "dapsc")
+	logger.info("==============================test is command=====================================")
+	clearcase.isViewExist("apbld_tmp-wmx50-build-test")
+	clearcase.isVobExist("/vob/wibb_bts")
+	clearcase.isLockExist("brtype:apbld_tmp-wmx50-build-test@/vob/wibb_bts")
+	clearcase.isBranchExist("apbld_tmp-wmx50-build-test","/vob/wibb_bts")
+	clearcase.isLabelExist("WMX-AP_R5.0_BLD-45.01.00","/vob/wibb_bts")
+	clearcase.isBranchLocked("apbld_tmp-wmx50-build-test", "/vob/wibb_bts")
+	
 	logger.info("BMC End")
 
 if __name__ == "__main__":

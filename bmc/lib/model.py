@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
+import logging
+import sys
+	
 class VOB(object):
 	"""
 	Describe the VOB in the configuration
 	"""
-	def __init__(self, name, tag, merge=False, label=False, lockExp=''):
+	def __init__(self, name, tag, willMerge=False, willLabel=False, lockExp=''):
 		self.name = name
 		self.tag = tag
-		self.merge = merge
-		self.label = merge
+		self.merge = willMerge
+		self.label = willLabel
 		self.path = self.tag
 		self.lockExp = lockExp
 	def __str__(self):
@@ -25,17 +28,18 @@ class BuildMode(object):
 	def __str__(self):
 		return "BuildMode{name:%s}"%self.name
 	
-class Condition(object):
+class Action(object):
 	"""
-	Describe the condition for a step in the configuration
+	Describe the pre-action and post-action for a step in the configuration
+	the pre-action can be used as condition
 	"""
-	def __init__(self, name, pattern, threshold='noUse'):
+	def __init__(self, name, *args, **kwargs):
 		self.name = name
-		self.pattern = pattern
-		self.threshold = threshold
+		self.args = args
+		self.kwargs = kwargs
 	
 	def __str__(self):
-		return "Condition{name:%s,pattern:%s}"%(self.name, self.pattern)
+		return "Action{name:%}"%(self.name)
 		
 class Step(object):
 	'''
@@ -49,19 +53,29 @@ class Step(object):
 			self.targets = targets
 		else:
 			self.targets = [self.name]
-		self.conditions = []
+		self.preActions = []
+		self.postActions = []
+		
 	def iscomposite(self):
 		return self.type == "composite"
 	def isatomic(self):
 		return self.type == "atomic"
-	def addCondition(self, cond):
-		self.conditions.append(cond)
-	def getConditions(self):
-		return self.conditions
-	def removeCondition(self, condname):
-		for cond in self.conditions:
-			if cond.name == condname:
-				step.removeCondition(cond)
+	def addPreAction(self, action):
+		self.preActions.append(action)
+	def getPreActions(self):
+		return self.preActions
+	def removePreActions(self, actionName):
+		for action in self.preActions:
+			if action.name == actionName:
+				self.preActions.remove(cond)
+	def addPostAction(self, action):
+		self.postActions.append(action)
+	def getPostActions(self):
+		return self.postActions
+	def removePostActions(self, actionName):
+		for action in self.postActions:
+			if action.name == actionName:
+				self.postActions.remove(cond)
 	def __str__(self):
 		return "Step{name:%s,type:%s,tool:%s,targets:%s}"%(self.name, self.type, self.tool, self.targets)
 		
@@ -106,6 +120,10 @@ class Instance(object):
 			return self.getattr('vobFamilyLower')
 		else:
 			return self.getattr('vobFamilyUpper')
+	def getVobName(self):
+		return self.getVob(self.getVobFamily()).name
+	def getVobTag(self):
+		return self.getVob(self.getVobFamily()).tag
 	def getWuceProduct(self):
 		return self.getattr('wuceProduct')
 	def getBuildPool(self):
@@ -144,18 +162,29 @@ class Instance(object):
 			if step.name == name:
 				return step
 		return None
-	def getConditionsFromStep(self, name):
+	def getPreActionsFromStep(self, name):
 		step = self.getStep(name)
 		if step:
-			return step.getConditions()
+			return step.getPreActions()
 		return []
-	def getConditionFromStep(self, sname, cname):
-		conds = self.getConditionsFromStep(sname)
-		for cond in conds:
-			if cond.name == cname:
-				return cond
+	def getPreActionFromStep(self, sname, aname):
+		preActions = self.getPreActionsFromStep(sname)
+		for action in preActions:
+			if action.name == aname:
+				return action
 		return None
-	
+	def getPostActionsFromStep(self, name):
+		step = self.getStep(name)
+		if step:
+			return step.getPostActions()
+		return []
+	def getPostActionFromStep(self, sname, aname):
+		postActions = self.getPostActionsFromStep(sname)
+		for action in postActions:
+			if action.name == aname:
+				return action
+		return None
+		
 	#get atomic steps
 	def getAtomicSteps(self):
 		[step for step in self.getSteps() if step.isatomic()]
@@ -178,6 +207,7 @@ class Instance(object):
 		for vob in self.vobs:
 			if vob.name == vobn:
 				self.vobs.remove(vob)
+				
 	#step			
 	def addStep(self, name, type, tool, targets):
 		self.steps.append(Step(name, type, tool, targets))
@@ -189,13 +219,25 @@ class Instance(object):
 		for step in self.steps:
 			if step.name == name:
 				self.steps.remove(step)
-	def addConditionToStep(self, stepname, name, pattern, threshold='noUse'):
+				
+	#pre-action
+	def addPreActionToStep(self, stepname, name, *args, **kwargs):
 		step = self.getStep(stepname)
-		step.addCondition(Condition(name, pattern, threshold))
-	def removeConditionFromStep(self, stepname, name):
+		step.addPreAction(Action(name, *args, **kwargs))
+	def removePreActionFromStep(self, stepname, name):
 		step = self.getStep(stepname)
 		if step:
-			step.removeCondition(name)
+			step.removePreAction(name)
+			
+	#post-action
+	def addPostActionToStep(self, stepname, name, *args, **kwargs):
+		step = self.getStep(stepname)
+		step.addPostAction(Action(name, *args, **kwargs))
+	def removePostActionFromStep(self, stepname, name):
+		step = self.getStep(stepname)
+		if step:
+			step.removePostAction(name)
+			
 	#build mode
 	def addBuildMode(self, name, command):
 		if self.getBuildMode(name) == None:
@@ -204,3 +246,4 @@ class Instance(object):
 		for bm in self.buildModes:
 			if bm.name == name:
 				self.buildModes.remove(bm)
+

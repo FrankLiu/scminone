@@ -107,13 +107,20 @@ class XmlLoader(Loader):
 			else:
 				self.logger.warn("Step [%s] is invalid, ignore it!"%sn)
 				continue
-			#conditions for the step
-			conditions = getNodelist(s, "condition")
-			for c in conditions:
+			#pre-action for the step
+			preActions = getNodelist(s, "pre-action")
+			for c in preActions:
 				cn = getAttr(c,"cn")
-				self.logger.info("\tCondition [%s]"%cn)
-				self.ins.addConditionToStep(sn, cn, getAttr(c, "pattern"), getAttr(c, "threshold"))
-				self.logger.debug("\tCondition [%s]"%self.ins.getConditionFromStep(sn,cn))
+				self.logger.info("\tpre-action [%s]"%cn)
+				self.ins.addPreActionToStep(sn, cn, tuple(getAttr(c, "args")), dict(getAttr(c, "kwargs")))
+				self.logger.debug("\tpre-action [%s]"%self.ins.getPreActionFromStep(sn,cn))
+			#post-action for the step
+			postActions = getNodelist(s, "post-action")
+			for c in postActions:
+				cn = getAttr(c,"cn")
+				self.logger.info("\tpost-action [%s]"%cn)
+				self.ins.addPostActionToStep(sn, cn, tuple(getAttr(c, "args")), dict(getAttr(c, "kwargs")))
+				self.logger.debug("\tpost-action [%s]"%self.ins.getPostActionFromStep(sn,cn))
 		#composite steps
 		phases = set(getNodelist(self.tdom, "phase")).union(getNodelist(self.idom, "phase"))
 		for p in phases:

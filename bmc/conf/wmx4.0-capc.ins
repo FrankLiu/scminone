@@ -15,6 +15,7 @@
 	rvCronCnt="1"
 	nBCronPat="WMX040.CAPC1.ECLOUD emakeClnBldPkg"
 	defaultBMode="emakeBaseline">
+	<buildMode bn="fullBuild" bv="wucemake /vob/wuce/wuce/bin/wbld -C emake -C nodebug -V -k -v pcapc.clean pcapc pcapc.pkg capcsc.clean capcsc capcsc.pkg capclt.clean capclt capclt.pkg"/>
 	<buildMode bn="noWinClnBldPkg" bv="-V -k -v pcapc.clean pcapc pcapc.pkg capcsc.clean capcsc capcsc.pkg capclt.clean capclt capclt.pkg"/>
 	<buildMode bn="noWinBldPkg" bv="-V -k -v pcapc pcapc.pkg capcsc capcsc.pkg capclt capclt.pkg"/>
 	<buildMode bn="bldPkg" bv="-k -v pcapc pcapc.pkg capcsc capcsc.pkg capclt capclt.pkg"/>
@@ -26,12 +27,12 @@
 	<vob vn="wimax_cneomi" vTag="/vob/wimax_cneomi" vMerge="n" vLabel="n" vLockExp="noUse"/>
 	<vob vn="sdl" vTag="/vob/sdl" vMerge="n" vLabel="n" vLockExp="noUse"/>
 	<step sn="sBuild" sTool="/mot/proj/wibb_capc/daily/linux/bin/band_linux.emake" sType="atomic" sTarget="sBuild">
-		<condition cn="cCheckState" pattern="created"/>
-		<condition cn="cCheckBViewDS" pattern="000000" threshold="4000000"/>
-		<condition cn="cCheckDDirDS" pattern="G" threshold="1.5"/>
-		<condition cn="cCheckBldView" pattern="noUse"/>
-		<condition cn="cCheckLogDir" pattern="dailyLog"/>
-		<condition cn="cCheckTargetIntLb" pattern="noUse"/>
-		<condition cn="cCheckVobs" pattern="noUse"/>
+		<condition cn="cCheckState" args="created" kwargs="pattern=created"/>
+		<condition cn="cCheckBViewDS" args="000000, 4000000"/>
+		<condition cn="cCheckDDirDS" args="G, 1.5"/>
+		<condition cn="cCheckBldView"/>
+		<condition cn="cCheckLogDir" args="dailyLog"/>
+		<condition cn="cCheckTargetIntLb" />
+		<condition cn="cCheckVobs"/>
 	</step>
 </instance>
