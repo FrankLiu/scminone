@@ -1,6 +1,5 @@
-scminone
-========
+This is a ideal project, the key idea is integrate all of scm tools into one user interface, make transparent switch between different tools.
 
-this is a ideal project to efficient scm work
+support scm tool: clearcase, git, hg, svn
+definable workflow(scm policy): 
 
-Add one more line, check the git status.
