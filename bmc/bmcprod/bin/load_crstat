@@ -1,0 +1,83 @@
+#! /apps/public/perl_5.8.7/bin/perl -w 
+###############################################################################
+#
+#       Copyright (C) 2006 MOTOROLA. All Rights Reserved.
+#
+#
+#       FILE NAME:              upload_qm_srs
+#
+#       OWNER(S):               WiMAX SCM
+#
+#       DATE CREATED:           October 12, 2006
+#
+#       SYNOPSIS:               upload_qm_srs
+#
+#
+#       OUTPUTS:                ASCII file.
+#                                     
+#
+#       DESCRIPTION:
+#       
+#       
+###############################################################################
+#
+#       MODIFICATION HISTORY:
+#
+#         Date           Person         Change
+#       ---------       --------      ----------------------------------
+#       10/13/2006       jchen4       original version.
+#
+###############################################################################
+
+use File::Copy;
+use Getopt::Long;
+use POSIX;
+
+my ($dir, $ext, $username, $folder, @files);
+
+# Process command line arguments
+GetOptions( "dir|d=s", "ext|e=s", "coreID|c=s", "folder|fo=s");
+if ($opt_dir) {
+  $dir = $opt_dir;
+}
+if ($opt_ext) {
+  $ext = $opt_ext;
+}
+else {
+  $ext = '*';
+}
+if ($opt_coreID) {
+  $username = $opt_coreID;
+}
+if ($opt_folder) {
+  $folder = $opt_folder;
+}
+if ($opt_coreID eq "" || $opt_folder eq "" || $opt_dir eq "") {
+    die("\n$0 -c <coreID> -fo <folder number> -d <dir name> | -h/elp |-x\n");
+}
+
+# name the upload tool
+my $upload_tool = "/mot/proj/wibb_capc/daily/crstat/bin/wi_upload.linux";
+
+# obtain current time in epoch format
+# ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time) 9-element list
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+my $epochtime = mktime($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst);
+
+my $limit = 24*60*60; # seconds of a day
+
+chdir($dir);
+while (<*.$ext>) {
+  # () =stat $filename 13-element list
+  # mtime: last modify time since the epoch 00:00 01/01/1970
+
+  my @stat = stat($_);
+  my $diff = $epochtime - $stat[9];
+
+  if ($diff <= $limit) { # the file was updated within 24 hours
+    #print "$_\n";
+    system("$upload_tool -c $username -fo $folder -fi $_");
+  }
+}
+
+exit 0;

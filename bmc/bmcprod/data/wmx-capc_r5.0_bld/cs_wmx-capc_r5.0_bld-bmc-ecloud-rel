@@ -1,0 +1,51 @@
+#----------------------------------------------------------------------#
+# CMBlueprint - ClearCase View Config Spec
+
+#   (Using DevProject 'WMX-CAPC_R5.0_REL-9.00.00.prj' located at:
+#    /mot/proj/wibb_bts/cmbp/prod/cm-policy/bin/script/../../config/WIBB_CAPC_projects/WMX-CAPC_R5.0_REL-9.00.00.prj)
+
+
+# Development rules:
+#
+element * CHECKEDOUT 
+# This section is to pickup the SDL KERNEL
+# system_eng vob
+# System Level Common Definitions (in iSL)
+
+element /vob/wibb/... WMX-COMMONSYS_R5.0_RB_PATCH23
+# BTS-CAPC Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-BTSCAPC_R5.0_RB_PATCH9
+# CAPC-CAPC Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-CAPCCAPC_R5.0_RB_PATCH3
+# wimax_cneomi vob
+element * CNEOMI-AGENT_R5.0_INT-5.10
+element * CNEOMI-AGENT_R5.0_BLD-5
+
+# Build Environment
+# adding this rule for smart build 
+element /vob/wuce/wuce/bin/checkbranchcs.ksh /main/dev-152611/1
+# WUCE rules
+# integrate BBS1.13 kernel
+element /vob/wuce/wuce/bin/sed/wrl20_em7150_32_platform.sed /main/cwnj74_tmp-cv-163338/cwnj74_tmp-cv-167122/1
+element /vob/wuce/wuce/bin/sed/wrl20_em7150_64_platform.sed /main/cwnj74_tmp-cv-167122/1
+# adding this rule for new version numbering
+element /vob/wuce/wuce/bin /main/dev-175520/1
+element /vob/wuce/wuce/bin/wucemake  .../capcbld_wuce-il27/3
+element /vob/wuce/... WUCE13.4G23.EMAKE
+element /vob/sdl/... .../catemake/3
+element /vob/ltewbc/bld/... -none
+element /vob/ltewbc-capc/bld/... -none
+# SDL
+element /vob/sdl/... TAU_GSGH_4_0_REL1.5.1
+element /vob/sdl/... SAEI_GSGH_REL1.23
+################################################
+ 
+element * .../wimax_r5.0-main/LATEST 
+element .../lost+found -none 
+mkbranch wimax_r5.0-main 
+element * WMX-CAPC_R5.0_REL-9.00.00 
+element * R5.0 
+element * /main/LATEST 
+end mkbranch wimax_r5.0-main
+
+#----------------------------------------------------------------------#

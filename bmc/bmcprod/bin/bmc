@@ -1,0 +1,49 @@
+#! /apps/public/perl_5.8.7/bin/perl -w
+
+BEGIN {
+use File::Basename;
+$cwdir = dirname($0);
+unshift (@INC, $cwdir.'/../lib');
+}
+
+$BIN_DIR = "$cwdir/../bin";
+$CONFIG_DIR = "$cwdir/../config";
+$DATA_DIR = "$cwdir/../data";
+
+
+use BmcLib;
+use BmcVar;
+use Getopt::Long;
+
+my $status = 0;
+my ($ins, $ste, $att, $vie, $mod);
+eval {
+  GetOptions( "instance|ins=s", "step|ste=s", "attr|att=s","view|vie=s", "mode|mod=s","help|h|x");
+  (defined $opt_instance) || die("$bmcErrorPrefix bmc -ins/tance <integration branch> -step <step name>");
+  $ins = $opt_instance;
+  defined ($opt_step) || die("$bmcErrorPrefix bmc -ins/tance <integration branch> -step <step name>");
+  $ste = $opt_step;
+  if ($opt_step eq "sUpdateAttr") {
+    (defined $opt_attr) || die("$bmcErrorPrefix $opt_step needs $opt_attr!");
+    $att = $opt_attr;
+  }
+  else {
+    $att = "noUse";
+  }
+  $vie = (defined $opt_view)? $opt_view: "noUse"; 
+  $mod = (defined $opt_mode)? $opt_mode: "noUse";
+
+  if (-w $DATA_DIR) {
+    iRun($ins, $ste, $att, $vie, $mod);
+  }
+  else {
+    print "$bmcErrorPrefix $DATA_DIR is not writable\n";
+  }
+
+};
+if ($@) {
+  print "$@";
+  $status = 1;
+}
+
+exit $status;

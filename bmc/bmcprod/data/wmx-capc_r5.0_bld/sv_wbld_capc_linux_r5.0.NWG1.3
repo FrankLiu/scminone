@@ -1,0 +1,13 @@
+CRON_LOG=/mot/proj/wibb_capc/daily/cron.log
+
+date >> ${CRON_LOG} 2>&1
+
+/usr/atria/bin/cleartool mount /vob/sdl >> ${CRON_LOG} 2>&1
+/usr/atria/bin/cleartool mount /vob/wibb_capc >> ${CRON_LOG} 2>&1
+/usr/atria/bin/cleartool mount /vob/wimax_cneomi >> ${CRON_LOG} 2>&1
+/usr/atria/bin/cleartool mount /vob/wuce >> ${CRON_LOG} 2>&1
+
+newgrp capc <<EOF
+/usr/atria/bin/cleartool setview -exe "/mot/proj/wibb_capc/daily/linux/bin/wbld_capclt_linux_clean >> ${CRON_LOG} 2>&1" nwg1.3-capc_r5.0_tmp-nightly
+EOF
+# newgrp exits script here

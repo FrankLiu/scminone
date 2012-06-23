@@ -1,0 +1,9 @@
+#! /bin/ksh
+#set -x
+
+cd /vob/$2;
+$1 mkattr -replace -nc DevProject \"$3.prj\" lbtype:$3@vob:/vob/$2
+exit $?
+
+
+

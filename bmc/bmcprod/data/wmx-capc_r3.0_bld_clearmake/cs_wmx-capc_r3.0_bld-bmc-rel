@@ -1,0 +1,43 @@
+#----------------------------------------------------------------------#
+# CMBlueprint - ClearCase View Config Spec
+
+#   (Using DevProject 'WMX-CAPC_R3.0_REL-1.60.00.prj' located at:
+#    /mot/proj/wibb_bts/cmbp/prod/cm-policy/bin/script/../../config/WIBB_CAPC_projects/WMX-CAPC_R3.0_REL-1.60.00.prj)
+
+
+# Development rules:
+#
+element * CHECKEDOUT 
+# This section is to pickup the SDL KERNEL
+# system_eng vob
+# System Level Common Definitions (in iSL)
+element /vob/wibb/... WMX-COMMONSYS_R3.0-SP1_PATCH2
+# CAPC-CAPC  Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-CAPCCAPC_R3.0-SP1_PATCH2
+# BTS-CAPC  Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-BTSCAPC_R3.0-SP1_PATCH2
+# wimax_cneomi vob
+element /vob/wimax_cneomi/... CNEOMI-AGENT_R3.0_INT-4.5 
+element /vob/wimax_cneomi/... CNEOMI-AGENT_R3.0_BLD-4
+# Build Environment
+element /vob/wuce/wuce/bin/sed/mv343_em64t_tc.sed /main/4
+element /vob/wuce/wuce/bin/sed/mv343_ppc74_tc.sed /main/3
+# adding these 3 rules as per MOTCM01187027 
+element /vob/wuce/wuce/bin/hostpath WUCE13.4G10
+element /vob/wuce/wuce/bin/wucenv WUCE13.4G10
+element /vob/wuce/wuce/process/local_kwlocal.mk WUCE13.4G10
+element /vob/wuce/... WUCE12.WMX30
+# SDL
+element /vob/sdl/... TAU_GSGH_WMX3.0_REL3.0
+element /vob/sdl/... SAEI_REL3.0_CAPC_WMX3.0_LIB_REL3.0
+element /vob/sdl/... SAEI_GSGH_CAPC_WMX3.0_REL3.3
+################################################
+ 
+element * .../wimax_r3.0-main/LATEST 
+element .../lost+found -none 
+mkbranch wimax_r3.0-main 
+element * WMX-CAPC_R3.0_REL-1.60.00 
+element * /main/LATEST 
+end mkbranch wimax_r3.0-main
+
+#----------------------------------------------------------------------#

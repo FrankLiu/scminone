@@ -1,0 +1,67 @@
+#----------------------------------------------------------------------#
+# CMBlueprint - ClearCase View Config Spec
+
+#   (Using DevProject 'WMX-AP_R2.5_REL-3.55.00.prj' located at:
+#    /mot/proj/wibb_bts/cmbp/prod/cm-policy/bin/script/../../config/WIBB_BTS_projects/WMX-AP_R2.5_REL-3.55.00.prj)
+
+
+# Development rules:
+#
+element * CHECKEDOUT 
+# This section is to pickup external component
+
+element /vob/wibb_bts/nm/CLAgent/e500-glibc_cgl/... HAP-WIPRO-CNEOMI-AGENT_R2.5_INT-8.11_WIMAXIM_02.05.01.18.07 -nocheckout
+element /vob/wimax_cneomi/... LIBS_FOR_AP_2.5_COMPILER
+element /vob/wimax_cneomi/... KERNEL_2.6_LIBRARIES
+element /vob/wimax_cneomi/... WIPRO-CNEOMI-AGENT_R2.5_INT-8.11
+element /vob/wimax_cneomi/... WIPRO-CNEOMI-AGENT_R2.5_BLD-8
+element /vob/wibb/system_eng/uml_model/... WIMAXIM_02.05.01.18.07
+element /vob/wimax_cneomi/... -none
+element /vob/wibb/... WMX-COMMONSYS_R2.5-SP1_RB
+element /vob/wibb/... WMX-COMMONSYS_R2.5_REL-R02.05.02_R2.5-8-22PATCH15
+element /vob/wibb/... WMX-COMMONSYS_R2.5_REL-R02.05.02_R2.5-8-22PATCH12
+element /vob/wibb/... WMX-COMMONSYS_R2.5_REL-R02.05.02_R2.5-8-22PATCH10
+element /vob/wibb/... WMX-COMMONSYS_R2.5_REL-R02.05.02_R2.5-8-22PATCH8
+element /vob/wibb/... WMX-COMMONSYS_R2.5_REL-R02.05.02_R2.5-8-22PATCH7
+element /vob/wibb/... WMX-BTSCAPC_R2.5_REL-R02.05.02_R2.5-8-22PATCH14
+element /vob/wibb/... WMX-BTSCAPC_R2.5_REL-R02.05.02_R2.5-8-22PATCH12
+element /vob/wibb/... WMX-BTSCAPC_R2.5_REL-R02.05.02_R2.5-8-22PATCH7
+element /vob/wibb/... WMX-BTSBTS_R2.5_REL-R01.00.08_R2.5-8-22PATCH1
+element /vob/wibb/... WMX-CAPCCAPC_R2.5_REL-R02.05.03PATCH1_R2.5-8-22PATCH5
+element /vob/wibb/... WMX-CAPCCAPC_R2.5_REL-R02.05.03PATCH1_R2.5-8-22PATCH3
+element /vob/wibb/... WMX-CAPCCAPC_R2.5_REL-R02.05.03PATCH1_R2.5-8-22PATCH2
+element /vob/wibb_swa/... WMX-MSSBTS_R2.5-SP1_PATCH1
+element /vob/wibb_swa/tools/... WIBB_SWA_TOOL_R00.01
+element /vob/wibb_swa/... /main/LATEST
+element /vob/wuce/wuce/bin/band /main/22
+element /vob/wuce/wuce/bin/sed/WMX025AP1L2_band.sed /main/LATEST
+element /vob/wuce/wuce/bin/sed/WMX025AP3L2il1_band.sed /main/LATEST
+element /vob/wuce/wuce/bin/sed /main/LATEST
+element /vob/wuce/wuce/process/pkgfs.mk /main/35
+element /vob/wuce/wuce/bin/sed/dapsc_tamoff_arch.sed /main/LATEST
+element /vob/wuce/... WUCE13.4G08
+element /vob/sdl/... TAU_GSGH_2_7_1_REL1.8
+element /vob/sdl/... SAEI_GSGH_REL1.8.1_AP2.5_LIB_REL1.0
+element /vob/sdl/... SAEI_GSGH_AP2.5_REL1.8.1
+element /vob/wibb_bts/platform/delivery/modem/kernel/... APSW_PLAT_BS03.02.06 
+element /vob/wibb_bts/platform/delivery/modem/plat_bsp/... APSW_PLAT_BS03.02.06 
+element /vob/wibb_bts/platform/delivery/modem/bootrom/... APSW_PLAT_BL03.02.04 
+element /vob/wibb_bts/platform/delivery/modem/phy_sap_api/... APSW_PLAT_WIBBFW_R2.5.3_BLD-0.3.1.1
+element /vob/wibb_bts/platform/delivery/modem/supported_modem_hals.txt APSW_PLAT_BS03.02.02
+element /vob/wibb_bts/platform/delivery/sc/kernel/... APSW_PLAT_LSP03.00.22.2
+element /vob/wibb_bts/platform/delivery/sc/kernel/... APSW_PLAT_IR01.02.02
+element /vob/wibb_bts/platform/delivery/sc/bootrom/... APSW_PLAT_BL03.02.04
+element /vob/wibb_bts/platform/delivery/sc/fpga/... APSW_PLAT_SC_FPGA_D 
+element /vob/wibb_bts/platform/delivery/sc/supported_hals.txt  APSW_PLAT_LSP03.00.20
+element /vob/wibb_bts/platform/delivery/... APSW_PLAT_DEL_DIRS
+element /vob/haprel_r3/... HAP-BASE_R3.3-MKT60_REL-02.04
+################################################
+ 
+element * .../wimax_r2.5-main/LATEST 
+element .../lost+found -none 
+mkbranch wimax_r2.5-main 
+element * WMX-AP_R2.5_REL-3.55.00 
+element * /main/LATEST 
+end mkbranch wimax_r2.5-main
+
+#----------------------------------------------------------------------#

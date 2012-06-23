@@ -1,0 +1,39 @@
+#----------------------------------------------------------------------#
+# CMBlueprint - ClearCase View Config Spec
+
+#   (Using DevProject 'WMX-CAPC_R2.5_REL-1.77.00.prj' located at:
+#    /mot/proj/wibb_bts/cmbp/prod/cm-policy/bin/script/../../config/WIBB_CAPC_projects/WMX-CAPC_R2.5_REL-1.77.00.prj)
+
+
+# Development rules:
+#
+element * CHECKEDOUT 
+# This section is to pickup the SDL KERNEL
+# system_eng vob
+# System Level Common Definitions (in iSL)
+element /vob/wibb/... WMX-COMMONSYS_R2.5_REL-R02.05.02_R2.5-8-22PATCH15
+# BTS-CAPC Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-BTSCAPC_R2.5_REL-R02.05.02_R2.5-8-22PATCH14
+# CAPC-CAPC  Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-CAPCCAPC_R2.5_REL-R02.05.03PATCH1_R2.5-8-22PATCH6
+# wimax_cneomi vob
+element /vob/wimax_cneomi/... WIPRO-CNEOMI-AGENT_R2.5_INT-8.4
+element /vob/wimax_cneomi/... WIPRO-CNEOMI-AGENT_R2.5_BLD-8
+# Build Environment
+element /vob/wuce/... JCHEN4-TAUG2
+element /vob/wuce/... WUCE12.WMX24
+#SDL
+element /vob/sdl/... TAU_GSGH_2_7_1_ASNGW2.5_REL1.7.1
+element /vob/sdl/... SAEI_GSGH_REL1.3.1_ASNGW2.5_LIB_REL1.0
+element /vob/sdl/... SAEI_GSGH_ASNGW2.5_REL1.3.2
+
+################################################
+ 
+element * .../wimax_r2.5-main/LATEST 
+element .../lost+found -none 
+mkbranch wimax_r2.5-main 
+element * WMX-CAPC_R2.5_REL-1.77.00 
+element * /main/LATEST 
+end mkbranch wimax_r2.5-main
+
+#----------------------------------------------------------------------#

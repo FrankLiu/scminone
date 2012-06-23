@@ -1,0 +1,73 @@
+#----------------------------------------------------------------------#
+# CMBlueprint - ClearCase View Config Spec
+
+#   (Using DevProject 'WMX-AP_R3.0.1_REL-10.35.00.prj' located at:
+#    /mot/proj/wibb_bts/cmbp/prod/cm-policy/bin/script/../../config/WIBB_BTS_projects/WMX-AP_R3.0.1_REL-10.35.00.prj)
+
+
+# Development rules:
+#
+element * CHECKEDOUT 
+# This section is to pickup external components
+
+element /vob/wibb_bts/nm/CLAgent/e500-glibc_cgl/... CNEOMI-AGENT_R3.0_INT-4.9_WIMAXIM_03.00.00.14.01 -nocheckout
+element /vob/wibb_bts/nm/CLAgent/ppc_e500v2-glibc_cgl/... CNEOMI-AGENT_R3.0_INT-4.9_WIMAXIM_03.00.00.14.01 -nocheckout
+element /vob/wimax_cneomi/... LIBS_FOR_AP_2.5_COMPILER
+element /vob/wimax_cneomi/... CNEOMI-AGENT_R3.0_INT-4.9
+element /vob/wimax_cneomi/... CNEOMI-AGENT_R3.0_BLD-4
+element /vob/wibb/system_eng/uml_model/... WIMAXIM_03.00.00.14.01
+element /vob/wimax_cneomi/... -none
+## System Level Common Definitions (in iSL)
+element /vob/wibb/... WMX-COMMONSYS_R3.0-SP1_PATCH5
+# BTS-CAPC Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-BTSCAPC_R3.0-SP1_PATCH4
+# BTS-BTS   Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-BTSBTS_R3.0-SP1_PATCH1
+# MSS-BTS  Interface-Specific Definitions (in iSL)
+element /vob/wibb_swa/... WMX-MSSBTS_R3.0-SP1_PATCH9
+element /vob/wibb_swa/tools/... WIBB_SWA_TOOL_R00.01
+element /vob/wibb_swa/... /main/LATEST
+element /vob/wuce/wuce/bin/checkbranchcs.ksh /main/3
+element /vob/wuce/... WUCE13.4G11
+element /vob/wuce/wuce/bin/sed/apsac_arch.sed /main/3
+element /vob/sdl/sdlShared/src/kernels/LINUXAPPLNOPOLLMAIN/makeoptions /main/wimax_main/wimax_1.0/tau2_2.7_release/tau2_4.0_release/catemake_tau2_4.0/1
+element /vob/sdl/... TAU_GSGH_AP_4_0_REL1.0 
+element /vob/sdl/... SAEI_GSGH_AP_TAU4_WMX3.0_REL3.2
+
+element /vob/wibb_bts/platform/delivery/... APSW_PLAT_DEL_DIRS 
+element /vob/wibb_bts/platform/delivery/sc APSW_PLAT_DEL_DIRS
+element /vob/wibb_bts/platform/delivery/sac APSW_PLAT_DEL_DIRS
+element /vob/wibb_bts/platform/delivery/modem APSW_PLAT_DEL_DIRS
+
+
+element /vob/wibb_bts/platform/delivery/sac/bootloader/... APSW_PLAT_BLSAC00.04.01
+element /vob/wibb_bts/platform/delivery/sac/bootmanager/... APSW_PLAT_BMSAC00.03.05 
+element /vob/wibb_bts/platform/delivery/sac/fpga/... APSW_PLAT_SAC_FPGA_0207 
+element /vob/wibb_bts/platform/delivery/sac/kernel_and_fs/... APSW_PLAT_LSPSAC00.00.18.2 
+element /vob/wibb_bts/platform/delivery/sac/supported_hals.txt  APSW_PLAT_LSPSAC00.00.14 
+element /vob/wibb_bts/platform/delivery/sac/codeload_kernel/... APSW_PLAT_CLSAC00.00.10
+ 
+element /vob/wibb_bts/platform/delivery/modem/kernel/... APSW_PLAT_BS03.02.11 
+element /vob/wibb_bts/platform/delivery/modem/plat_bsp/... APSW_PLAT_BS03.02.11 
+element /vob/wibb_bts/platform/delivery/modem/bootrom/... APSW_PLAT_BL03.02.12 
+element /vob/wibb_bts/platform/delivery/modem/phy_sap_api/... APSW_PLAT_WIBBFW_R3.0.1_BLD-0.2.9-1
+element /vob/wibb_bts/platform/delivery/modem/supported_modem_hals.txt APSW_PLAT_BS03.02.11
+
+element /vob/wibb_bts/platform/delivery/sc/kernel/... APSW_PLAT_IR01.02.03 
+element /vob/wibb_bts/platform/delivery/sc/kernel/... APSW_PLAT_LSP03.00.28
+element /vob/wibb_bts/platform/delivery/sc/bootrom/... APSW_PLAT_BL03.02.12 
+element /vob/wibb_bts/platform/delivery/sc/fpga/... APSW_PLAT_SC_FPGA_D 
+element /vob/wibb_bts/platform/delivery/sc/supported_hals.txt  APSW_PLAT_SC_HAL_COMP_1.3.0
+# 
+element /vob/haprel_r3/... HAP-BASE_R3.5_REL-01.47
+################################################
+ 
+element * .../wimax_r3.0.1-main/LATEST 
+element .../lost+found -none 
+mkbranch wimax_r3.0.1-main 
+element * WMX-AP_R3.0.1_REL-10.35.00 
+element * R3.0.1 
+element * /main/LATEST 
+end mkbranch wimax_r3.0.1-main
+
+#----------------------------------------------------------------------#

@@ -1,0 +1,168 @@
+#----------------------------------------------------------------------#
+# CMBlueprint - ClearCase View Config Spec
+
+#   (Using DevProject 'WMX-AP_R5.0_REL-19.00.00.prj' located at:
+#    /mot/proj/wibb_bts/cmbp/prod/cm-policy/bin/script/../../config/WIBB_BTS_projects/WMX-AP_R5.0_REL-19.00.00.prj)
+
+
+# Development rules:
+#
+element * CHECKEDOUT 
+# This section is to pickup external components
+element /vob/wibb_bts/nm/im/... WIMAXIM_05.00.01.14.01_HAP-BASE_R3.7_REL-01.23_P2 -nocheckout
+element /vob/wibb_bts/nm/CLAgent/e500-glibc_cgl/... CNEOMI-AGENT_R5.0_INT-5.1-WIMAXIM_05.00.01.14.01
+element /vob/wibb_bts/nm/CLAgent/ppc_e500v2-glibc_cgl/... CNEOMI-AGENT_R5.0_INT-5.1-WIMAXIM_05.00.01.14.01
+
+element /vob/wimax_cneomi/... CNEOMI-AGENT_R5.0_INT-5.1
+element /vob/wimax_cneomi/... CNEOMI-AGENT_R5.0_BLD-5
+element /vob/wibb/system_eng/uml_model/... WIMAXIM_05.00.01.14.01
+element /vob/wimax_cneomi/... -none
+
+# System Level Common Definitions (in iSL) 
+element /vob/wibb/... WMX-COMMONSYS_R5.0_RB_PATCH23
+
+# BTS-CAPC  Interface-Specific Definitions (in iSL) 
+element /vob/wibb/... WMX-BTSCAPC_R5.0_RB_PATCH9
+ 
+# BTS-BTS  Interface-Specific Definitions (in iSL) 
+element /vob/wibb/... WMX-BTSBTS_R5.0_RB_PATCH4
+ 
+# MSS-BTS  Interface-Specific Definitions (in iSL) 
+element /vob/wibb_swa/... WMX-MSSBTS_R5.0_RB_PATCH11
+ 
+# NWGR6 Interface-Specific Definitions (in iSL) 
+element /vob/wibb/... WMX-NWGR6_R5.0_RB_PATCH16
+
+element /vob/ltescm/... LTE-SCM_CMN_BLD-10.00
+
+##### Wuce files for new version numbering ###########
+element /vob/wuce/wuce/bin/lb1bl1CMBP1add1 /main/dev-175145/1
+element /vob/wuce/wuce/bin /main/dev-175520/1
+element /vob/wuce/wuce/bin/cmbp_label_prevbld /main/dev-175520/2
+element /vob/wuce/wuce/bin/incprodver /main/dev-175520/3 
+
+## INDEV00177631 Automation of AP upgrade pre-check
+element /vob/wuce/wuce/bin/sed /main/emake/dev-174371-emake/dev-177631-emake/2
+element /vob/wuce/wuce/bin/sed/apprecheck_arch.sed  /main/dev-177631-emake/1
+element /vob/wuce/wuce/bin/sed/apprecheck_rpm_arch.sed /main/dev-177631-emake/1
+element /vob/wuce/wuce/bin/sed/apprecheck_rpm_product.sed /main/dev-177631-emake/1
+element /vob/wuce/wuce/bin/hostpath  /main/emake/dev-177631-emake/2
+element /vob/wuce/wuce/bin/spb_label /main/dev-177631-emake/1
+element /vob/wuce/wuce/bin/wbld /main/emake/dev-177631-emake/1
+element /vob/wuce/wuce/process/pkg_rpm.mk /main/emake/dev-177631-emake/1
+element /vob/wuce/wuce/share/wac_usage /main/dev-174371/dev-177631-emake/1
+
+##### INDEV00174371 WRL30 for WiMAX BCU1, /vob/wuce changes ###
+element /vob/wuce/wuce/bin/sed   /main/emake/dev-174371-emake/1 
+element /vob/wuce/wuce/bin/build-retgz .../dev-175938/3
+element /vob/wuce/wuce/bin/lumk  /main/emake/dev-174371-emake/3 
+element /vob/wuce/wuce/bin/sed/wrl30_e500_platform.sed   /main/dev-174371/1 
+element /vob/wuce/wuce/bin/sed/wrl30_e500sc_platform.sed /main/dev-174371/2 
+element /vob/wuce/wuce/bin/ewok  /main/dev-174371/2 
+element /vob/wuce/wuce/process/local_lkm.mk  /main/emake/dev-174371-emake/1
+element /vob/wuce/wuce/share/wac_usage  /main/dev-174371/2 
+
+##### Emake specific changes starts here ###########
+element /vob/wuce/wuce/process/local_vxmod.mk .../hqjr73-tools-mk/9
+element /vob/wuce/wuce/bin/sed/wrc_tc.sed  /main/emake/cwnj74_tmp-cv-171759/2
+element /vob/wuce/...   WUCE13.4G23A.EMAKE 
+
+##### Emake changes ends here       ###########
+
+element /vob/sdl/... TAU_GSGH_4_0_REL1.5.1  
+element /vob/sdl/... SAEI_GSGH_REL1.23
+
+# for BCU-1 /vob/sdl/lib/lib_tau271/linux/wrlinppc (and for tau)
+
+element /vob/sdl/... TAU_GSGH_4_0_REL1.5
+
+element /vob/omp4g_bldtools/wrl30/... WRL30GA_PATCHLEVEL1
+element /vob/omp4g_bldtools/pnele20wrl20ga/... PNELE20_WRL20_GA_PATCHLEVEL1
+element /vob/omp4g_bldtools/pnele14ve32d/... PNELE14VE32D_PATCHLEVEL1_TIPC1.7.6
+
+element /vob/omp4g/platform/delivery/... OMP_PLAT_DELIVERY_DIRS
+
+element /vob/wibb_bts/platform/delivery/... APSW_PLAT_DEL_DIRS
+element /vob/wibb_bts/platform/delivery/sc APSW_PLAT_DEL_DIRS
+element /vob/wibb_bts/platform/delivery/sac APSW_PLAT_DEL_DIRS
+element /vob/wibb_bts/platform/delivery/modem APSW_PLAT_DEL_DIRS
+element /vob/wibb_bts/platform/delivery/4xmodem   APSW_PLAT_DEL_DIRS
+
+element /vob/omp4g/platform/delivery/sac/bootloader/...                 4XBL00.04.16
+element /vob/omp4g/platform/delivery/sac/bootmanager/...                4XBM00.04.02
+element /vob/wibb_bts/platform/delivery/sac/fpga/... APSW_PLAT_SAC_FPGA_020F
+element /vob/wibb_bts/platform/delivery/sac/kernel_and_fs -none
+
+element /vob/omp4g_oss/platform/delivery/sac/kernel_and_fs/... LSP04.00.03
+element /vob/wibb_bts/platform/delivery/sac/supported_hals.txt  APSW_PLAT_SAC_HAL_COMP_0.1.0
+element /vob/omp4g_oss/platform/delivery/sac/codeload_kernel/...        CLSAC00.00.11
+
+
+element /vob/wibb_bts/platform/delivery/sc/kernel -none
+element /vob/omp4g_oss/platform/delivery/sc/kernel_and_fs/... LSP04.00.03 
+element /vob/omp4g_oss/platform/delivery/sc/codeload_kernel/...         IR01.02.05
+element /vob/omp4g/platform/delivery/sc/bootrom/...                     BL03.02.12
+element /vob/wibb_bts/platform/delivery/sc/fpga/... APSW_PLAT_SC_FPGA_0011
+element /vob/wibb_bts/platform/delivery/sc/supported_hals.txt  APSW_PLAT_SC_HAL_COMP_1.3.0
+
+
+element /vob/omp4g/platform/delivery/modem/bootrom/...                  BL03.02.12
+element /vob/omp4g/platform/delivery/modem/kernel/...                   BS03.02.22_1_2
+element /vob/omp4g/platform/delivery/modem/supported_modem_hals.txt     BS03.02.22_1_2
+element /vob/omp4g/platform/code/vxkernel/config/...                    BS03.02.22_1_2
+element /vob/omp4g/platform/code/vxkernel/...                           BS03.02.22_1_2
+element /vob/omp4g/platform/code/2x_bsp/...                             BS03.02.22_1_2
+
+
+element /vob/wibb_bts/platform/delivery/modem/phy_sap_api/... APSW_PLAT_WIBBFW_R5.0.1_REL-0.1.5
+
+element /vob/wibb_bts/platform/delivery/modem/bootrom -none
+element /vob/wibb_bts/platform/delivery/modem/kernel -none
+element /vob/wibb_bts/platform/delivery/modem/supported_modem_hals.txt -none
+element /vob/wibb_bts/platform/code/vxkernel -none
+element /vob/wibb_bts/platform/delivery/modem/plat_bsp -none
+
+
+element /vob/omp4g/platform/delivery/4xmodem/bootmanager/...            4XBM00.04.00
+element /vob/omp4g/platform/delivery/4xmodem/bootloader/...             4XBL00.04.18
+element /vob/omp4g/platform/delivery/4xmodem/kernel/...                 4XBS00.04.20_1_2
+element /vob/omp4g/platform/delivery/4xmodem/supported_4xmodem_hals.txt 4XBS00.04.20_1_2
+element /vob/omp4g/platform/code/4xkerndevel/config/...                 4XBS00.04.20_1_2
+element /vob/omp4g/platform/code/4xkerndevel/...                        4XBS00.04.20_1_2
+element /vob/omp4g/platform/code/4x_bsp/...                             4XBS00.04.20_1_2
+
+
+element /vob/wibb_bts/platform/delivery/4xmodem/phy_sap_api/... APSW_PLAT_4X_WIBBFW_R5.0.1_REL-0.1.5
+
+element /vob/wibb_bts/platform/delivery/4xmodem/bootmanager -none
+element /vob/wibb_bts/platform/delivery/4xmodem/bootloader -none
+element /vob/wibb_bts/platform/delivery/4xmodem/kernel -none
+element /vob/wibb_bts/platform/delivery/4xmodem/supported_4xmodem_hals.txt -none
+element /vob/wibb_bts/platform/delivery/4xmodem/4xkerndevel -none
+element /vob/wibb_bts/platform/delivery/4xmodem/4x_bsp -none
+
+
+
+element /vob/omp4g_oss/platform/code/pam_radius_auth-1.3.16/... PAM_RADIUS_AUTH-1.3.16_2
+element /vob/omp4g_oss/platform/code/libedit/3.0-20090923/... LIBEDIT-3.0-20090923_1
+element /vob/omp4g_oss/nm/code/drbd-8.0.16/... DRBD-8.0.16
+element /vob/omp4g_oss/nm/code/mini_httpd-1.19/... MINI_HTTPD-1.19_5
+element /vob/omp4g_rd_oss/... LKM-OMP4G_R1.0_REL-1.11.07
+element /vob/omp4g_r2/... OMP-OMP4G_R2.1_BLD-1.01.08
+element /vob/omp4g/... OMP-OMP4G_R2.1_BLD-1.01.08
+element /vob/haprel_r3/... HAP-BASE_R3.7_REL-01.23
+element /vob/omp4g_oss/platform/code/libxslt-1.1.26/... LIBXSLT-1.1.26_1
+element /vob/omp4g_oss/nm/code/dojo-1.4.3/... DOJO-1.4.3
+element /vob/omp4g_oss/nm/code/jquery-1.4.2/... JQUERY-1.4.2_0
+element /vob/omp4g_oss/nm/code/flot-0.6/... FLOT-0.6_0
+################################################
+ 
+element * .../wimax_r5.0-main/LATEST 
+element .../lost+found -none 
+mkbranch wimax_r5.0-main 
+element * WMX-AP_R5.0_REL-19.00.00 
+element * R5.0 
+element * /main/LATEST 
+end mkbranch wimax_r5.0-main
+
+#----------------------------------------------------------------------#

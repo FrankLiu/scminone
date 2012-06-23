@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<phases name="noUse">
+	<phase sn="pIntBuildBL" sTool="dAndC" sType="composite" sTarget="sSwapWBView sUpdateNBVer sCheckNBVer sLockTargetIntBr sBuild sGenCrStat"/>
+	<phase sn="pIntBL" sTool="dAndC" sType="composite" sTarget="sUpdateNBVer sCheckNBVer sLockTargetIntBr sCreateBldLb sLabelTargetIntBr sMkPrjDevPrjInt sGenCrStat"/>
+	<phase sn="pScmBL" sTool="dAndC" sType="composite" sTarget="sGrantOkMergeToInt sMergeIntToRelMain sCreateRelLb sLabelRelMain sMkPrjDevPrjScm"/>
+	<phase sn="pStartInt" sTool="dAndC" sType="composite" sTarget="sGenIns sCreateTargetIntBr sSwapNBView sIncreNBVer sCheckNBVer"/>
+	<phase sn="pStartNextInt" sTool="dAndC" sType="composite" sTarget="sGenIns sCreateTargetIntBr sSwapNBView sIncreNBVer sCheckNBVer"/>
+	<phase sn="pUpdateCQ" sTool="dAndC" sType="composite" sTarget="sCloseCr sLinkIntBlP sCloseIntBl sLinkScmBlP sLinkScmBlC sCloseScmBl"/>
+	<phase sn="pBuildBLInOne" sTool="dAndC" sType="composite" sTarget="pIntBuildBL pScmBL pUpdateCQ pStartNextInt"/>
+	<phase sn="pBLInOne" sTool="dAndC" sType="composite" sTarget="pIntBL pScmBL pUpdateCQ pStartNextInt"/>
+</phases>

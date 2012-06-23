@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<instance name="name_REPLACEMENT"
+	state="state_REPLACEMENT" 
+	baseScmLb="baseScmLb_REPLACEMENT" 
+	targetScmLb="targetScmLb_REPLACEMENT" 
+	baseIntLb="baseIntLb_REPLACEMENT" 
+	targetIntBr="targetIntBr_REPLACEMENT" 
+	targetIntLb="targetIntLb_REPLACEMENT" 
+	targetIntBl="targetIntBl_REPLACEMENT" 
+	nBView="SP20252.AP3"
+	targetRelMain="wimax_r2.5.2-main"
+        crStatDir="/mot/proj/wibb_bts/daily/crstat/r2.5.2"
+        crStatFolder="286069350"
+	vobFamilyLower="wibb_bts" 
+	vobWuceLower="wuce/wuce"
+	wuceProduct="dapmodem" 
+	buildPool="isdlinux1" 
+	dailyDir="/mot/proj/wibb_bts/daily"
+	defaultBMode="noUse">
+	<vob vn="wibb_bts" vTag="/vob/wibb_bts" vMerge="y" vMgLogMsg="All merges were SUCCESSFUL|No merges were found to be necessary" vLabel="y" vLbLogMsg="86 failed" vRefer="y" vRfLogMsg="NoUse" vLockExp="apbld" vLbPath="/vob/wibb_bts"/>
+        <vob vn="wuce" vTag="/vob/wuce" vMerge="n" vMgLogMsg="noUse" vLabel="n" vLbLogMsg="0 failed" vRefer="y" vRfLogMsg="NoUse" vLockExp="apbld" vLbPath="/vob/wuce/wuce"/>
+	<buildMode bn="noWinClnBldPkg" bv="noUse"/>
+	<buildMode bn="noWinBldPkg" bv="noUse"/>
+	<buildMode bn="bldPkg" bv="noUse"/>
+	<buildMode bn="pkg" bv="noUse"/> 
+</instance>

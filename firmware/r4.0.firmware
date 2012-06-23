@@ -1,0 +1,6 @@
+FIRMWARE_RELEASE=WIBBFW_R4.0.1_REL-0.5.0
+FIRMWARE_VIEW=40firmware_delivery
+
+#package name pattern
+FIRMWARE_PKG_PATTERN=N401
+

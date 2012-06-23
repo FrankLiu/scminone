@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<instance name="name_REPLACEMENT"
+	state="state_REPLACEMENT" 
+	baseScmLb="baseScmLb_REPLACEMENT" 
+	targetScmLb="targetScmLb_REPLACEMENT" 
+	targetScmBl="targetScmBl_REPLACEMENT" 
+	predScmBl="predScmBl_REPLACEMENT" 
+	baseIntLb="baseIntLb_REPLACEMENT" 
+	targetIntBr="targetIntBr_REPLACEMENT" 
+	targetIntLb="targetIntLb_REPLACEMENT" 
+	targetIntBl="targetIntBl_REPLACEMENT" 
+	predIntBl="predIntBl_REPLACEMENT" 
+	nBView="WMX050.AP"
+	targetRelMain="wimax_r5.0-main"
+	cqProd="AP"
+        crStatDir="/mot/proj/wibb_bts/daily/crstat/apbld/wmx-ap_r5.0_bld"
+	recipient="wibbscm@motorola.com"
+	vobFamilyLower="wibb_bts" 
+	wuceProduct="dapmodem" 
+	buildPool="isdlinux1|isdnnlinux1|isdmldlinux|isdlinux4|isdlinux5" 
+	builder="apbld|root" 
+	dailyDir="/mot/proj/wibb_bts/daily/R5.0/daily"
+	okCronCnt="noUse"
+	nBCronCnt="noUse"
+	rvCronCnt="noUse"
+	nBCronPat="noUse"	
+	defaultBMode="noUse">
+	<buildMode bn="noUse" bv="noUse"/>
+	<buildMode bn="noUse" bv="noUse"/>
+	<buildMode bn="noUse" bv="noUse"/>
+	<buildMode bn="noUse" bv="noUse"/> 
+	<buildMode bn="noUse" bv="noUse"/> 
+	<vob vn="wibb_bts" vTag="/vob/wibb_bts" vMerge="y" vMgLogMsg="Branch targetIntBr_REPLACEMENT is ready_to_build." vLabel="y" vLbPath="/vob/wibb_bts" vRefer="y" vLockExp="apbld,nmbld,scbld,macbld"/>
+        <vob vn="wuce" vTag="/vob/wuce" vMerge="n" vMgLogMsg="noUse" vLabel="n" vLbPath="/vob/wuce/wuce" vRefer="y" vLockExp="apbld,nmbld,scbld,macbld"/>
+</instance>

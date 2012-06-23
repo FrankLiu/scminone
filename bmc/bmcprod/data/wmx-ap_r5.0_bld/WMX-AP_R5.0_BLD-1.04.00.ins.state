@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<instance name="WMX-AP_R5.0_BLD-1.04.00"
+	state="baselinedRel" 
+	baseScmLb="WMX-AP_R5.0_REL-1.03.00" 
+	targetScmLb="WMX-AP_R5.0_REL-1.04.00" 
+	targetScmBl="WMX-AP_R5.0_REL-1.04.00" 
+	predScmBl="WMX-AP_R5.0_REL-1.03.00" 
+	baseIntLb="WMX-AP_R5.0_BLD-1.03.03" 
+	targetIntBr="wmx-ap_r5.0_bld-1.04.00" 
+	targetIntLb="WMX-AP_R5.0_BLD-1.04.00" 
+	targetIntBl="WMX-AP_R5.0_BLD-1.04.00" 
+	predIntBl="WMX-AP_R5.0_BLD-1.03.00" 
+	nBView="WMX050.AP"
+	targetRelMain="wimax_r5.0-main"
+	cqProd="AP"
+        crStatDir="/mot/proj/wibb_bts/daily/crstat/apbld/wmx-ap_r5.0_bld"
+	recipient="wibbscm@motorola.com"
+	vobFamilyLower="wibb_bts" 
+	wuceProduct="dapmodem" 
+	buildPool="isdlinux1|isdnnlinux1|isdmldlinux|isdlinux4|isdlinux5" 
+	builder="apbld|root" 
+	dailyDir="/mot/proj/wibb_bts/daily/R5.0/daily"
+	okCronCnt="noUse"
+	nBCronCnt="noUse"
+	rvCronCnt="noUse"
+	nBCronPat="noUse"	
+	defaultBMode="noUse">
+	<buildMode bn="noUse" bv="noUse"/>
+	<buildMode bn="noUse" bv="noUse"/>
+	<buildMode bn="noUse" bv="noUse"/>
+	<buildMode bn="noUse" bv="noUse"/> 
+	<buildMode bn="noUse" bv="noUse"/> 
+	<vob vn="wibb_bts" vTag="/vob/wibb_bts" vMerge="y" vMgLogMsg="All merges were SUCCESSFUL|No merges were found to be necessary" vLabel="y" vLbPath="/vob/wibb_bts" vRefer="y" vLockExp="apbld,nmbld,scbld,macbld"/>
+        <vob vn="wuce" vTag="/vob/wuce" vMerge="n" vMgLogMsg="noUse" vLabel="y" vLbPath="/vob/wuce/wuce" vRefer="y" vLockExp="apbld,nmbld,scbld,macbld"/>
+  	<step sn="sCheckIns" sTool="noUse" sType="atomic" sTarget="sCheckIns"/>
+  	<step sn="sUpdateIns" sTool="noUse" sType="atomic" sTarget="sUpdateIns"/>
+  	<step sn="sUpdateAttr" sTool="noUse" sType="atomic" sTarget="sUpdateAttr"/>
+  	<step sn="sGenIns" sTool="noUse" sType="atomic" sTarget="sGenIns"/>
+  	<step sn="sCreateTargetIntBr" sTool="noUse" sType="atomic" sTarget="sCreateTargetIntBr"/>
+  	<step sn="sSwapNBView" sTool="noUse" sType="atomic" sTarget="sSwapNBView"/>
+  	<step sn="sCheckNBVer" sTool="noUse" sType="atomic" sTarget="sCheckNBVer"/>
+  	<step sn="sUpdateOkMergeToCr" sTool="noUse" sType="atomic" sTarget="sUpdateOkMergeToCr"/>
+  	<step sn="sUpdateRVReminder" sTool="noUse" sType="atomic" sTarget="sUpdateRVReminder"/>
+  	<step sn="sTurnOnOkMergeToCr" sTool="noUse" sType="atomic" sTarget="sTurnOnOkMergeToCr"/>
+  	<step sn="sTurnOnNBuild" sTool="noUse" sType="atomic" sTarget="sTurnOnNBuild"/>
+  	<step sn="sTurnOnRVReminder" sTool="noUse" sType="atomic" sTarget="sTurnOnRVReminder"/>
+  	<step sn="sSynConfig" sTool="noUse" sType="atomic" sTarget="sSynConfig"/>
+  	<step sn="sMergeStat" sTool="noUse" sType="atomic" sTarget="sMergeStat"/>
+  	<step sn="sCreateReminderCron" sTool="noUse" sType="atomic" sTarget="sCreateReminderCron"/>
+  	<step sn="sRmViewReminder" sTool="noUse" sType="atomic" sTarget="sRmViewReminder"/>
+  	<step sn="sTurnOffNBuild" sTool="noUse" sType="atomic" sTarget="sTurnOffNBuild"/>
+  	<step sn="sTurnOffOkMergeToCr" sTool="noUse" sType="atomic" sTarget="sTurnOffOkMergeToCr"/>
+  	<step sn="sTurnOffRVReminder" sTool="noUse" sType="atomic" sTarget="sTurnOffRVReminder"/>
+  	<step sn="sSwapWBView" sTool="noUse" sType="atomic" sTarget="sSwapWBView"/>
+  	<step sn="sUpdateNBVer" sTool="noUse" sType="atomic" sTarget="sUpdateNBVer"/>
+  	<step sn="sLockTargetIntBr" sTool="noUse" sType="atomic" sTarget="sLockTargetIntBr"/>
+  	<step sn="sCreateBldLb" sTool="noUse" sType="atomic" sTarget="sCreateBldLb">
+		<condition cn="cCheckState" pattern="created"/>
+		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
+		<condition cn="cCheckBldView" pattern="noUse"/>
+	</step>
+  	<step sn="sLabelTargetIntBr" sTool="noUse" sType="atomic" sTarget="sLabelTargetIntBr">
+		<condition cn="cCheckState" pattern="createdBldLb"/>
+		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
+		<condition cn="cCheckTargetIntBr" pattern="Locked"/>
+		<condition cn="cCheckBldView" pattern="noUse"/>
+	</step>
+	<step sn="sMkPrjDevPrjInt" sTool="noUse" sType="atomic" sTarget="sMkPrjDevPrjInt"/>
+	<step sn="sIncreNBVer" sTool="noUse" sType="atomic" sTarget="sIncreNBVer"/>
+	<step sn="sGenCrStat" sTool="noUse" sType="atomic" sTarget="sGenCrStat"/>
+  	<step sn="sGrantOkMergeToInt" sTool="noUse" sType="atomic" sTarget="sGrantOkMergeToInt"/>
+  	<step sn="sMergeIntToRelMain" sTool="noUse" sType="atomic" sTarget="sMergeIntToRelMain">
+		<condition cn="cCheckState" pattern="created|baselinedBld|built|sanitized"/>
+		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
+		<condition cn="cCheckTargetIntBr" pattern="Locked"/> 
+		<condition cn="cCheckOkToMergeOnRelMain" pattern="Ok_to_merge"/> 
+		<condition cn="cCheckRelView" pattern="noUse"/>
+	</step>
+  	<step sn="sCreateRelLb" sTool="noUse" sType="atomic" sTarget="sCreateRelLb">
+		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
+		<condition cn="cCheckRelView" pattern="noUse"/>
+	</step>
+  	<step sn="sLabelRelMain" sTool="noUse" sType="atomic" sTarget="sLabelRelMain">
+		<condition cn="cCheckState" pattern="createdRelLb"/>
+		<condition cn="cCheckLogDir" pattern="baseIntLbDir"/>
+		<condition cn="cCheckRelView" pattern="noUse"/>
+	</step>
+	<step sn="sMkPrjDevPrjScm" sTool="noUse" sType="atomic" sTarget="sMkPrjDevPrjScm"/>
+  	<step sn="sBlReport" sTool="noUse" sType="atomic" sTarget="sBlReport"/>
+  	<step sn="sCloseCr" sTool="noUse" sType="atomic" sTarget="sCloseCr"/>
+  	<step sn="sCloseIntBl" sTool="noUse" sType="atomic" sTarget="sCloseIntBl"/>
+  	<step sn="sCloseScmBl" sTool="noUse" sType="atomic" sTarget="sCloseScmBl"/>
+  	<step sn="sLinkIntBlP" sTool="noUse" sType="atomic" sTarget="sLinkIntBlP"/>
+  	<step sn="sLinkScmBlP" sTool="noUse" sType="atomic" sTarget="sLinkScmBlP"/>
+  	<step sn="sLinkScmBlC" sTool="noUse" sType="atomic" sTarget="sLinkScmBlC"/>
+	<vob vn="wibb" vTag="/vob/wibb" vMerge="n" vMgLogMsg="noUse" vLabel="n" vLbPath="noUse" vRefer="y" vLockExp="noUse"/>
+	<vob vn="wimax_cneomi" vTag="/vob/wimax_cneomi" vMerge="n" vMgLogMsg="noUse" vLabel="n" vLbPath="noUse" vRefer="y" vLockExp="noUse"/>
+	<vob vn="sdl" vTag="/vob/sdl" vMerge="n" vMgLogMsg="noUse" vLabel="n" vLbPath="noUse" vRefer="y" vLockExp="noUse"/>
+</instance>

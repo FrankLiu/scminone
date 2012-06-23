@@ -1,0 +1,48 @@
+#----------------------------------------------------------------------#
+# CMBlueprint - ClearCase View Config Spec
+
+#   (Using DevProject 'WMX-CAPC_R4.0_REL-1.72.00.prj' located at:
+#    /mot/proj/wibb_bts/cmbp/prod/cm-policy/bin/script/../../config/WIBB_CAPC_projects/WMX-CAPC_R4.0_REL-1.72.00.prj)
+
+
+# Development rules:
+#
+element * CHECKEDOUT 
+# This section is to pickup the SDL KERNEL
+# system_eng vob
+# System Level Common Definitions (in iSL)
+
+element /vob/wibb/... WMX-COMMONSYS_R4.0_RB_PATCH12
+# BTS-CAPC Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-BTSCAPC_R4.0_RB_PATCH10
+# CAPC-CAPC  Interface-Specific Definitions (in iSL)
+element /vob/wibb/... WMX-CAPCCAPC_R4.0_RB_PATCH7
+# wimax_cneomi vob
+element * CNEOMI-AGENT_R4.0_INT-2.9
+element * CNEOMI-AGENT_R4.0_BLD-2
+# Build Environment
+# adding this rule for smart build
+element /vob/wuce/wuce/bin/checkbranchcs.ksh /main/dev-152611/1
+# WUCE rules
+element /vob/wuce/wuce/bin/wucenv /main/tmp_emake-compat/dev-154679/fcgd46_tmp-cv-172197/2
+element /vob/wuce/wuce/process/pkg_rpm.mk /main/tmp_emake-compat/dev-154679/fcgd46_tmp-fixrpmissue4.0/1
+element /vob/wuce/wuce/process/pkgfs.mk /main/tmp_emake-compat/dev-154679/fcgd46_tmp-fixrpmissue4.0/1
+element /vob/wuce/wuce/bin/wucemake  .../capcbld_wuce-il27/3
+element /vob/wuce/... WUCE13.4G16.CAPC.EMAKE
+element /vob/sdl/... .../catemake/3
+element /vob/ltewbc/bld/... -none
+element /vob/ltewbc-capc/bld/... -none
+# SDL
+element /vob/sdl/... TAU_GSGH_4_0_REL1.3.1
+element /vob/sdl/... SAEI_GSGH_CAPC_WMX4.0_REL4.1
+################################################
+ 
+element * .../wimax_r4.0-main/LATEST 
+element .../lost+found -none 
+mkbranch wimax_r4.0-main 
+element * WMX-CAPC_R4.0_REL-1.72.00 
+element * R4.0 
+element * /main/LATEST 
+end mkbranch wimax_r4.0-main
+
+#----------------------------------------------------------------------#
