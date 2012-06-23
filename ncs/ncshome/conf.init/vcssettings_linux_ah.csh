@@ -1,0 +1,71 @@
+#!/bin/tcsh -x
+
+alias usage 'echo "Usage:";echo "$0 sm4.0|sm5.0|sfm4.0|sfm5.0";exit 1'
+
+echo "CoSim Setup start..."
+
+# parse args
+if ($# < 1) then
+	usage
+endif
+switch ($argv[1])
+	case sm*:
+		set PRODUCT=SM
+		set COSIM_SW_DIR=/mot/proj/wibb_capc/cosim/cosim-04.00.00/cosim/
+		set COSIM_KERNEL=/vob/wibb_bts/msm/code/SubscriberManager/pkgDeploymentArtifacts/cosim_kernel
+		breaksw
+	case sfm4*:
+		set PRODUCT=SFM
+		set COSIM_SW_DIR=/opt/apps/cosim-03-06-00
+		set COSIM_KERNEL=/vob/wibb_bts/msm/code/FlowManager/pkgFlowMgrDeployment/cosim_kernel
+		breaksw
+	case sfm*:
+		set PRODUCT=SFM
+		set COSIM_SW_DIR=/opt/apps/cosim
+		set COSIM_KERNEL=/vob/wibb_bts/msm/code/FlowManager/pkgFlowMgrDeployment/cosim_kernel
+		breaksw
+	default: 
+		usage
+		breaksw
+endsw
+
+set CUR_DIR=`pwd`
+
+# cp cosim software
+if (! -d $CUR_DIR/cosim) then
+	cp -r $COSIM_SW_DIR $CUR_DIR/cosim
+endif
+
+# initialize system envirables
+setenv COSIM_DIR $CUR_DIR/cosim
+setenv COSIM_PATH $CUR_DIR
+setenv CLEARCASE_HOME /opt/rational/clearcase
+setenv MERGESTAT_HOME /usr/prod/vobstore104/cmbp/WIMAX/cm-policy
+setenv MOUSETRAP_HOME /mot/proj/wibb_capc/MOUSETRAP/MT_03-14-00
+setenv TAU_UML_DIR /apps/vendor/taug2_4.0.0.2
+setenv TAU_TTCN_DIR /apps/vendor/tautester_2.7
+setenv TAU_TESTER /apps/vendor/tautester_2.7
+setenv TEST_CDF $COSIM_DIR/common/data/TestEnv.cfg
+setenv DEBUG_LEVEL 4
+setenv G2_GENERATE_MAPFILE 1
+setenv AUTOGEN_EXTERNAL_OPS FALSE
+setenv CC gcc
+setenv OSTYPE linux
+setenv TAU_TESTER_MAJOR_VER 3
+setenv TAU_TESTER_MINOR_VER 1
+setenv LM_LICENSE_FILE 27030@csamlicna01.mot.com:27030@csamlicna02.mot.com:27030@csamlicea01.mot.com:19353@sail-a:19353@sail-b:19353@swim-b:19353@run-c:7143@zru03sun07:5280@ski-b:1700@zru03sun01:~ddts/license.dat:7144@scalpel:19353@sail-a:27000@zru11lic01
+setenv TIPC_DEV_ROOT /mot/linux_cosim_h/1.1/src/h
+
+# linke cosim kernel
+ln -sf $COSIM_DIR/uml/kernel $COSIM_KERNEL
+
+# initialize port
+(cd /vob/wibb_bts/nm/code/libcmt/packUnpack; $CLEARCASE_HOME/bin/clearmake -f mt_cmt_lib)
+unset sctdir
+chmod +w $COSIM_DIR/env_int/src/appdata.txt
+$COSIM_DIR/tools/portCatch.pl
+
+# finish cosim setup
+echo "$PRODUCT CoSim Setup finished!"
+
+

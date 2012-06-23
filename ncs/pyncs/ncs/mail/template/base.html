@@ -1,0 +1,49 @@
+##############################################
+##	This is template for ncs mail
+##	It includes the following supported variables
+##		${title}
+##		${sr_link}
+##		${report_link}
+##		${srs} ${srsummary}
+##		${mergestat}
+##		${project_test_summary} ${self.body()}
+##################################################
+<%def name="rendertestsummary(summary)">
+% if summary:
+<div class="test_summary">
+	<div class="test_summary_text">
+		Summary:<br/>
+		passrate - ${summary.get('passrate')}%<br/>
+		total - ${summary.get('total')}<br/>
+		passed - <span class='pass'>${summary.get('pass')}</span><br/>
+		failed - <span class='fail'>${summary.get('fail')}</span><br/>
+		error - <span class='error'>${summary.get('error')}</span><br/>
+	</div>
+	<div class="test_summary_chart"></div>
+	<div class="clear"></div>
+</div>
+%endif
+</%def>
+<%include file="/header.html" args="title='${title}'"/>
+<div id="summaryinfo"><b>Load Version:</b> ${loadversion}</div>
+<div id="hover_content"></div>
+<%self:rendertestsummary summary="${testsummary}"></%self:rendertestsummary>
+<div id="ncsreport"></div>
+<div id="ncssrlist">
+<span class="label">Below is the quick check for CoSim SR list</span>
+<%include file="/srtable.html" args="headline='${headline}',srhtml='${srhtml}',srsummary='${srsummary}'"/>
+</div>
+<div id="ncslink">
+Please refer to <a href="${sr_link}" title="${sr_link}">${sr_link}</a> for CoSim SR list.<br/>
+Please refer to <a href="${report_link}" title="${report_link}">${report_link}</a> for CoSim NCS status report.<br/>
+</div>
+${self.body()}
+% if mergestat:
+<div id='mergestat'>
+<span class="label">CRs Integrated to Baseline</span>
+<div>${mergestat}</div>
+</div>
+%endif
+</div>
+<%include file="/footer.html"/>
+<%include file="/chart.html" args="projects_test_summary='${projects_test_summary}'"/>

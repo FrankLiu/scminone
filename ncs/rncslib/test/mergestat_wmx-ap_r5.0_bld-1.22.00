@@ -1,0 +1,22 @@
+********************************************************************************
+	BRANCH: wmx-ap_r5.0_bld-1.22.00
+	VIEW: ncs_sm5.0_part1	
+********************************************************************************
+Merged                           Merge Merge
+Branch                           Begun Done  Component/FA                  CR State   Technical Authority  CR Number       Parent SR
+****************************************************************************************************************************************
+devint-1315894                   yes   yes   MSM                           Closed     cds130~Supehia, Dev  MOTCM01315894  MOTCM01315892
+devint-1318097                   yes   yes   MAC                           Performed  snaraya1~Narayanan,  MOTCM01318097  MOTCM01254329
+devint-1318944                   yes   yes   Network_Management            Performed  cra037~Anders, Rober MOTCM01318944  MOTCM01318943
+r5.0_dev-1312081                 yes   yes   MAC/MAC-CPS-Control_Plane     Performed  c00093~Rasquinha, Ka MOTCM01312081  MOTCM01301393
+r5.0_dev-1312371                 yes   yes   Platform                      Performed  wxnf68~Wei, Yanwei   MOTCM01312371  MOTCM01311931
+r5.0_dev-1316076                 yes   yes   Platform/Internal_Use-STE     Closed     ntcr64~WANG, PAN     MOTCM01316076  MOTCM01316074
+r5.0_dev-1316389                 yes   yes   SMA_Host_Security/IDS         Performed  xlin1~Lin, Xuejun    MOTCM01316389  MOTCM01295318
+r5.0_dev-1316685                 yes   yes   Platform                      Closed     fmg386~Li, Gong      MOTCM01316685  MOTCM01314513
+r5.0_dev-1317257                 yes   yes   Platform                      Performed  tjk473~Shen, Anming  MOTCM01317257  MOTCM01309898
+r5.0_dev-1317804                 yes   yes   WiMAX_FTE_DIT/FTE_MAC_TE      Closed     ada015~Afanasiev, Dm MOTCM01317804  MOTCM01317801
+r5.0_dev-1318113                 yes   yes   Platform                      Closed     cjd012~Duncan, Joshu MOTCM01318113  MOTCM01318107
+r5.0_dev-1319345                 yes   yes   WiMAX_FTE_DIT/FTE_SCH_TE      Closed     ada015~Afanasiev, Dm MOTCM01319345  MOTCM01317801
+r5.0_dev-1320374                 yes   yes   Platform                      Closed     qa0891~Bill Schmitt  MOTCM01320374  MOTCM01320355
+****************************************************************************************************************************************
+Merges completed/Total Merges Required = 13/13

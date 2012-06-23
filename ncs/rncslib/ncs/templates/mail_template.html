@@ -1,0 +1,78 @@
+<!--
+	This is template for ncs mail
+	It includes the following supported variables
+		#{title}
+		#{sr_link}
+		#{report_link}
+		#{srs} ${srsummary}
+		#{host} #{ip} #{os} #{view}
+		#{errors}
+		#{buildresults}
+		#{testsummary}
+		#{testresults}
+		#{mergestat}
+		#{testedprojects}
+-->
+<% include header %>
+<div id="hover_content"></div>
+<div id="ncslink">
+<% if defined?(sr_link) and not sr_link.empty? %>
+Please refer to <a href="#{sr_link}" title="#{sr_link}">#{sr_link}</a> for CoSim SR list.<br/>
+<% end %>
+<% if  defined?(report_link) and not report_link.empty? %>
+Please refer to <a href="#{report_link}" title="#{report_link}">#{report_link}</a> for CoSim NCS status report.<br/>
+<% end %>
+</div>
+<div id="ncsreport"></div>
+<div id="ncssrlist">
+<% include sr_list %>
+</div>
+<div class="ncshostinfo">host: #{host}/#{ip}<br/>os: #{os}<br/>view: #{view}</div>
+<div class="ncsbuildresult">
+<% if defined?(buildresults) and not buildresults.empty? %>
+Results of compilation:<br/>
+--------------------------<br/>
+Please find logs @ #{buildlogdir}<br/>
+<% buildresults.each{ |br| %>
+#{br.fetch('compile_message')}...<span class="#{br.fetch('style','')}">#{br.fetch('compile_result')}</span><br/>
+<% } %>
+<% end %>
+</div>
+<div class="ncserrormsg">
+<% if defined?(errors) and not errors.empty? %>
+<% errors.each{ |err| %>
+<span>#{err}</span><br/>
+<% } %>
+<% end %>
+</div>
+<div class="ncstestresult">
+<% if defined?(testresults) and not testresults.empty? %>
+Results of test execution:<br/>
+--------------------------<br/>
+Please find logs @ <a href='#{testlogdir}'></a><br/>
+<div class="test_summary">
+<% if defined?(testsummary) and not testsummary.empty? %>
+Summary:<br/>
+total - #{testsummary.fetch('total')}<br/>
+passed - <span class='pass'>#{testsummary.fetch('passed')}</span><br/>
+failed - <span class='failed'>#{testsummary.fetch('failed')}</span><br/>
+error - <span class='error'>#{testsummary.fetch('error')}</span><br/>
+passrate - #{testsummary.fetch('passrate')}%<br/>
+<% end %>
+</div>
+<div class="test_particular">Particulars(click to check test results):</div>
+<div class="test_results">
+<% testresults.each{ |tr| %>
+Test Case #{tr.fetch('caseno').to_s.rjust(5,'&nbsp;')}... <span class="#{tr.fetch('style','')}">#{tr.fetch('result').ljust(6,'&nbsp;')}</span> #{tr.fetch('srdesc','')}<BR/>
+<% } %>
+</div>
+<% end %>
+</div>
+<div id='mergestat'>
+<% if defined?(mergestat) and not mergestat.empty? %>
+<span>CRs Integrated to Baseline</span>
+<div>#{mergestat}</div>
+<% end %>
+</div>
+<% include footer %>
+<% include chart %>

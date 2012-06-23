@@ -1,0 +1,76 @@
+<%inherit file="/base.html"/>
+##############################################
+##	This is template for ncs mail
+##	It includes the following supported variables
+##		${title}
+##		${sr_link}
+##		${report_link}
+##		${srs} ${srsummary}
+##		${host} ${ip} ${os} ${view}
+##		${errors}
+##		${buildresults}
+##		${testsummary}
+##		${testresults}
+##		${mergestat}
+##		${testedprojects}
+##################################################
+<%def name="hostinfo(host, ipaddr, osname, view)">
+	host: ${host}/${ipaddr}<br/>
+	os: ${osname}<br/>
+	view: ${view}<br/>
+</%def>
+<%def name="buildinfo(logdir, results=[])">
+	%if buildresults:
+		Results of compilation:<br/>
+		--------------------------<br/>
+		Please find logs @ <a href='${logdir}'>${logdir}</a><br/>
+		%for res in results:
+			${res.get('compile_message')}...<span class="${res.get('style','')}">${res.get('compile_result')}</span><br/>
+		%endfor
+	%endif
+</%def>
+<%def name="errorinfo(errors)">
+	%if errors:
+		%for err in errors:
+			<span>${err}</span><br/>
+		%endfor
+	%endif
+</%def>
+<%def name="testinfo(logdir, summary, results=[])">
+	%if results:
+		Results of test execution:<br/>
+		--------------------------<br/>
+		Please find logs @ <a href='${logdir}'>${logdir}</a><br/>
+		<%self:rendertestsummary summary="${summary}"></%self:rendertestsummary>
+		<br/>
+		<span class="test_particular label">Particulars(click to see all testcase results):</span>
+		<table class="test_results">
+			<thead><tr><td>Binary Name</td><td>Test Case</td><td>Result</td><td>Description</td></tr></thead>
+			<tbody>
+			%for tr in results:
+				<tr>
+					<td></td>
+					<td>${tr.get('testcase')}</td>
+					<td><span class="${tr.get('style','')}">${tr.get('result')}</span></td>
+					<td>${tr.get('description','')}</td>
+				</tr>
+			%endfor
+			</tbody>
+		</table>
+	%endif
+</%def>
+<br/>
+<span class="label">Test detailed information</span>
+<br/>
+%for i,pr in enumerate(projectrunners):
+	<span class='part label'>Part ${i+1}(toggle detail by click me)</span>
+	<div class="part_content">
+		<div class="ncshost">
+			<div class="ncshostinfo"><%self:hostinfo host="${pr.host}" ipaddr="${pr.ipaddr}" osname="${pr.osname}" view="${pr.workview}"></%self:hostinfo></div>
+			<div class="ncsbuildresult"><%self:buildinfo logdir="${pr.buildlogdir}" results="${pr.buildresults}"></%self:buildinfo></div>
+			<div class="ncserrormsg"><%self:errorinfo errors="${pr.errors}"></%self:errorinfo></div>
+			<div class="ncstestresult"><%self:testinfo logdir="${pr.testlogdir}" summary="${pr.testsummary}" results="${pr.testresults}"></%self:testinfo></div>
+		</div>
+	</div>
+	<br/>
+%endfor

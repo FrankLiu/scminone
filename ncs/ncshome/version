@@ -1,0 +1,4 @@
+Nightly Cosim Script
+name: ncs
+version: 2.4
+build: %BLDREV%

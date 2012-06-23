@@ -1,0 +1,47 @@
+2010-12-01
+	* add print coverage function
+	
+2010-11-09
+	* fixed issue: included_in() & contains() not work correctly
+	
+2010-10-19
+	* fixed issue: function included_in() is not work correctly
+	
+2010-10-15
+	* fixed issue: test case not passed when ncs.test.test_params.nwg_mode.0 value includes , as prefix or appendix
+	
+2010-10-14
+	* add ncs.configurable to support more powerful configuration
+	* change old NECB configuration to new mechanism
+	* add necb_ft,ftp to new configuration mechanism
+
+2010-09-27
+	* develop new version mechanism
+	* fixed sfm5.0 build issue
+
+2010-09-26
+	* add new test params support: bs_up_at_init
+	
+2010-09-10
+	* fixed issue: when test passrate is 100%, then the chart is not showed
+	* support WMX5.0 nightly build label is changed to <major>{2}.<minor>{2}.00
+	
+2010-08-27
+	* add support for split ttp into 2 ttps, and 2 binarys
+	
+2010-08-17
+	* fixed issue: send mail issue
+	
+2010-08-13
+	* fixed issue: slaver machine crash, but main machine still send email out with in
+	
+2010-08-05
+	* add NcsVersion to support read version information from NCS
+	
+2010-07-28
+	* add new Compiler class to handle NCS compilation
+	* add TtpParser class to parse TTP file
+	* add Compiler2 to adapter NCS compilation in all platform(sm5.0/sm4.0/sfm5.0/sfm4.0)
+	
+2010-07-27 
+	* initialize "ncs-split-binary" branch from "default" branch

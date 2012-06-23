@@ -1,0 +1,10 @@
+[2010-06-22 17:03:21] [DEBUG] is_loggable=1 
+[2010-06-22 17:03:21] [DEBUG] test debug 
+[2010-06-22 17:03:21] [INFO] test info 
+[2010-06-22 17:03:21] [WARN] test warn 
+[2010-06-22 17:03:21] [ERROR] test error 
+[2010-06-22 17:03:21] [INFO] sleep 10 seconds to check the auto flesh! 
+[2010-06-22 17:03:31] [DEBUG] test debug 
+[2010-06-22 17:03:31] [INFO] test info 
+[2010-06-22 17:03:31] [WARN] test warn 
+[2010-06-22 17:03:31] [ERROR] test error 

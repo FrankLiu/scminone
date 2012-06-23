@@ -1,0 +1,5 @@
+ALL:
+FCGD46@motorola.com CWNJ74@motorola.com QA3978@motorola.com ALAZES1@motorola.com VDH483@motorola.com q19220@motorola.com w22997@motorola.com QNG346@motorola.com HKBR67@motorola.com SSONI1@motorola.com AAM056@motorola.com CZHANG3@motorola.com TPM846@motorola.com KWB746@motorola.com QA1756@motorola.com LMAMTAN1@motorola.com
+
+Internal:
+fcgd46@motorola.com cwnj74@motorola.com q19318@motorola.com KCHV37@motorola.com w22997@motorola.com q19267@motorola.com q19220@motorola.com

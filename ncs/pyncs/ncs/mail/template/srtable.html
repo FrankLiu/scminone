@@ -1,0 +1,23 @@
+<table id="srlist">
+<thead>
+<tr>
+% for v in srheadline:
+	<td>${v}</td>
+% endfor
+</tr>
+</thead>
+<tbody>
+% for srtr in srhtml:
+	<tr>
+    % for v in srtr:
+        <td>${v}</td>
+	% endfor
+    </tr>
+% endfor
+</tbody>
+% if srsummary:
+	<tfoot><tr>
+	<td colspan="8"><b>Summary of all CoSim SRs: </b> ${srsummary}</td>
+	</tr></tfoot>
+% endif
+</table>

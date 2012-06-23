@@ -1,0 +1,13 @@
+Telelogic Tau Application Builder
+
+Could not get license from FLEXlm: Cannot connect to license server system.
+ The license server manager (lmgrd) has not been started yet,
+ the wrong port@host or license file is being used, or the
+ port or hostname in the license file has been changed.
+Feature:       TAU-G2-UML-BASE
+Server name:   csamlicna01.mot.com
+License path:  27030@csamlicna01.mot.com:/opt/apps/Tester/license.dat:19353@sail-b:19353@swim-b:19353@sail-a:27030@csamlicna02.mot.com:27030@csamlicea01.mot.com:/opt/apps/Tau/license.dat:
+FLEXnet Licensing error:-15,570.  System Error: 115 "Operation now in progress"
+For further information, refer to the FLEXnet Licensing End User Guide,
+available at "www.macrovision.com"..
+Unable to retrieve license.

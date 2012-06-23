@@ -1,0 +1,11 @@
+[2010-11-18T17:13:28] [INFO] ------------------------------------------------------------ 
+[2010-11-18T17:13:28] [DEBUG] is_loggable=1 
+[2010-11-18T17:13:28] [DEBUG] test debug 
+[2010-11-18T17:13:28] [INFO] test info 
+[2010-11-18T17:13:28] [WARN] test warn 
+[2010-11-18T17:13:28] [ERROR] test error 
+[2010-11-18T17:13:28] [INFO] test extend... 
+[2010-11-18T17:13:28] [INFO] component [ncs::Logger] has actions: [debug,info,warn,error,fatal] 
+[2010-11-18T17:13:28] [INFO] add action 'fine,finest' 
+[2010-11-18T17:13:28] [INFO] component [ncs::Logger] has actions: [debug,info,warn,error,fatal,fine,finest] 
+[2010-11-18T17:13:28] [INFO] component [ncs::Logger] has actions: [debug,info,warn,error,fatal] 

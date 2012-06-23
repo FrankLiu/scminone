@@ -1,0 +1,40 @@
+[2010-07-28 13:32:34] [DEBUG] before process: CODE(0x101e88e0) 
+[2010-07-28 13:32:34] [DEBUG] before process invoked! 
+[2010-07-28 13:32:34] [INFO]  
+[2010-07-28 13:32:34] [INFO] Buiding SM start... 
+[2010-07-28 13:32:34] [INFO] /opt/apps/Tau/bin/taubatch -B -p SM.ttp -o pkgDeploymentArtifacts::Cosim_Linux 1>/cygdrive/d/WiMax/cosim/Script/ncshome/test/compile_model.log 2>&1 
+[2010-07-28 13:32:34] [INFO] Buiding SM to /vob/wibb_bts/msm/code/SubscriberManager/LinuxCosim/SubscriberManager.sct 
+[2010-07-28 13:32:44] [WARN] output file not exist: /vob/wibb_bts/msm/code/SubscriberManager/LinuxCosim/SubscriberManager.sct 
+[2010-07-28 13:32:44] [WARN] Try to build 3 times with make file: Makefile.SubscriberManager 
+[2010-07-28 13:32:44] [ERROR] make file Makefile.SubscriberManager not exists! give up! 
+[2010-07-28 13:32:44] [WARN] Finished building using make file: Makefile.SubscriberManager 
+[2010-07-28 13:32:54] [INFO] check Buiding SM start 
+[2010-07-28 13:32:54] [ERROR] cannot find output file: /vob/wibb_bts/msm/code/SubscriberManager/LinuxCosim/SubscriberManager.sct! 
+[2010-07-28 13:32:54] [ERROR] compilation failed!!! 
+[2010-07-28 13:32:54] [DEBUG] error handler: CODE(0x101e8ac0) 
+[2010-07-28 13:32:54] [ERROR] error handler invoked! 
+[2010-07-28 13:32:54] [INFO] check Buiding SM end 
+[2010-07-28 13:32:54] [INFO] Buiding SM end 
+[2010-07-28 13:32:54] [DEBUG] after process: CODE(0x101e89d0) 
+[2010-07-28 13:32:54] [DEBUG] after process invoked! 
+[2010-07-28 13:32:54] [DEBUG] before process: CODE(0x101e88e0) 
+[2010-07-28 13:32:54] [DEBUG] before process invoked! 
+[2010-07-28 13:32:54] [INFO]  
+[2010-07-28 13:32:54] [INFO] Buiding Test start... 
+[2010-07-28 13:32:54] [DEBUG] ttcn files: types/null_type.ttcn types/pkg_SM_msgs_inv.ttcn system/SystemArch_module.ttcn templates/HAP_msg_templates.ttcn templates/Headers_msg_templates.ttcn functions/Functions_OLCC.ttcn functions/Functions_MultiCarrier.ttcn functions/Functions_HAP.ttcn templates/CommonTemplates.ttcn templates/NetworkEntry_msg_templates.ttcn templates/Handover_msg_templates.ttcn templates/IdleMode_msg_templates.ttcn templates/CreateFlow_msg_templates.ttcn functions/Functions.ttcn functions/Functions_CreateFlow.ttcn templates/Dhcp_msg_templates.ttcn functions/Functions_NE_MIP_LEASE.ttcn functions/Functions_IdleMode.ttcn functions/Functions_DHCP.ttcn functions/Functions_NetworkExit.ttcn functions/Functions_Handover.ttcn testcases/SM_HAP.ttcn testcases/SM_DhcpMsgs.ttcn testcases/SM_IdleMode.ttcn testcases/SM_Init.ttcn testcases/SM_NetworkEntry.ttcn testcases/SM_InterAPHO.ttcn testcases/SM_IntraAPHO.ttcn testcases/SM_OLCC.ttcn testcases/SM_MultiCarrier.ttcn SM_OpenR6.ttcn
+ 
+[2010-07-28 13:32:54] [INFO] /opt/apps/Tester/bin/t3cg -m 100 -l 100 -t 0 -K -B -O -r SM_OpenR6 -p "/vob/wibb_bts/msm/test/sm_test/cosim" -T -v 3 -c -d "build" -F types/null_type.ttcn types/pkg_SM_msgs_inv.ttcn system/SystemArch_module.ttcn templates/HAP_msg_templates.ttcn templates/Headers_msg_templates.ttcn functions/Functions_OLCC.ttcn functions/Functions_MultiCarrier.ttcn functions/Functions_HAP.ttcn templates/CommonTemplates.ttcn templates/NetworkEntry_msg_templates.ttcn templates/Handover_msg_templates.ttcn templates/IdleMode_msg_templates.ttcn templates/CreateFlow_msg_templates.ttcn functions/Functions.ttcn functions/Functions_CreateFlow.ttcn templates/Dhcp_msg_templates.ttcn functions/Functions_NE_MIP_LEASE.ttcn functions/Functions_IdleMode.ttcn functions/Functions_DHCP.ttcn functions/Functions_NetworkExit.ttcn functions/Functions_Handover.ttcn testcases/SM_HAP.ttcn testcases/SM_DhcpMsgs.ttcn testcases/SM_IdleMode.ttcn testcases/SM_Init.ttcn testcases/SM_NetworkEntry.ttcn testcases/SM_InterAPHO.ttcn testcases/SM_IntraAPHO.ttcn testcases/SM_OLCC.ttcn testcases/SM_MultiCarrier.ttcn SM_OpenR6.ttcn 1>/cygdrive/d/WiMax/cosim/Script/ncshome/test/compile_test.log 2>&1 
+[2010-07-28 13:32:54] [INFO] Buiding Test to /vob/wibb_bts/msm/test/sm_test/cosim/build/SM_OpenR6 
+[2010-07-28 13:33:04] [WARN] output file not exist: /vob/wibb_bts/msm/test/sm_test/cosim/build/SM_OpenR6 
+[2010-07-28 13:33:04] [WARN] Try to build 1 times with make file: TestModule.mak 
+[2010-07-28 13:33:04] [ERROR] make file TestModule.mak not exists! give up! 
+[2010-07-28 13:33:04] [WARN] Finished building using make file: TestModule.mak 
+[2010-07-28 13:33:14] [INFO] check Buiding Test start 
+[2010-07-28 13:33:14] [ERROR] cannot find output file: /vob/wibb_bts/msm/test/sm_test/cosim/build/SM_OpenR6! 
+[2010-07-28 13:33:14] [ERROR] compilation failed!!! 
+[2010-07-28 13:33:14] [DEBUG] error handler: CODE(0x101e8ac0) 
+[2010-07-28 13:33:14] [ERROR] error handler invoked! 
+[2010-07-28 13:33:14] [INFO] check Buiding Test end 
+[2010-07-28 13:33:14] [INFO] Buiding Test end 
+[2010-07-28 13:33:14] [DEBUG] after process: CODE(0x101e89d0) 
+[2010-07-28 13:33:14] [DEBUG] after process invoked! 

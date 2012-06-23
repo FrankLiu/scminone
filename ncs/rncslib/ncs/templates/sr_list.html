@@ -1,0 +1,46 @@
+<!--
+	provided attributes:
+		srs
+		srsummary
+-->
+<span>Below is the quick check for CoSim SR list</span>
+<% if defined?(srs) and not srs.empty? %>
+<table id="srlist">
+<tbody>
+<tr style="background-color: rgb(238, 238, 238);">
+<td>#SR</td>
+<td>#Function</td>
+<td>#SR Headline</td>
+<td>#Assigned to</td>
+<td>#Status</td>
+<td>#Open Date</td>
+<td>#Close Date</td>
+<td>#Load Info</td>
+</tr>
+<% srs.each{ |sr| %>
+<tr>
+<td>#{sr.fetch('#SR')}</td>
+<td>#{sr.fetch('#Function')}</td>
+<td>#{sr.fetch('#SR Headline')}</td>
+<td>#{sr.fetch('#Assigned to')}</td>
+<td>#{sr.fetch('#Status')}</td>
+<td>#{sr.fetch('#Open Date')}</td>
+<td>#{sr.fetch('#Close Date','')}</td>
+<td>#{sr.fetch('#Load Info','')}</td>
+</tr>
+<% } %>
+<% if defined?(srsummary) and not srsummary.empty?%>
+<tr>
+<td colspan="8">
+<b>Summary of all CoSim SRs: </b>
+Originated [#{srsummary.fetch('Originated')}], 
+Assessed [#{srsummary.fetch('Assessed')}], 
+Study [#{srsummary.fetch('Study')}], 
+Performed [#{srsummary.fetch('Performed')}], 
+Closed [#{srsummary.fetch('Closed')}]
+</td>
+</tr>
+<% end %>
+</tbody>
+</table>
+<% end %>
