@@ -1,0 +1,234 @@
+#!/usr/bin/ksh
+## @Author frank.1.liu@nsn.com
+## 
+
+set -x
+
+#----------------------------------------------------------------------
+# shell variables
+uname -a
+
+# first pass
+export BUILDDIR=/vob/wibb_bts/bld
+export NAME=`basename $0`
+export PATH=/apps/vendor/bin:/usr/bin:/bin:/etc:/sbin:/usr/sbin:/usr/atria/bin:.:/vob/wuce/wuce/bin
+
+# second pass
+export VIEW=`cleartool pwv -short`
+CMBP_LABEL=`cmbp_label dapsc`
+export CMBP_LABEL_PREVBLD=`cmbp_label_prevbld dapsc`
+export SYSTEM_RELEASE=`cat ${BUILDDIR}/wuce/ver/sysrel`
+export PROD_FA_DIR=${DAILY_DIR}/R${SYSTEM_RELEASE}
+export BASELINE=`lb1bl1CMBP1add1 dapsc`
+if [ "$TEST_OPTION" == "test" ]; then
+	CMBP_LABEL="`cmbp_label dapsc`.TEST"
+	MAILTO=$SCMMAIL
+fi
+export CMBP_LABEL MAILTO
+export SPB_LABEL=`spb_label dapsc`
+
+# third pass
+export LOGDIR=${PROD_FA_DIR}/${CMBP_LABEL}
+export CONFIG_SPEC=${LOGDIR}/${CMBP_LABEL}.cs
+export MKLABEL_LOG=${LOGDIR}/${CMBP_LABEL}.mklabel
+
+umask 002
+mkdir -p ${LOGDIR}
+touch ${MKLABEL_LOG}
+
+#----------------------------------------------------------------------
+# build software
+
+cleartool setcs -current
+
+echo "# DO NOT REBUILD WITH THIS CONFIG SPEC." > ${LOGDIR}/${CMBP_LABEL}.cs
+echo "# " >> ${LOGDIR}/${CMBP_LABEL}.cs
+echo "# This is a historical config spec, not intended for rebuilding.  If you need" >> ${LOGDIR}/${CMBP_LABEL}.cs
+echo "# to rebuild from this build version, then create a new view with one of these" >> ${LOGDIR}/${CMBP_LABEL}.cs
+echo "# CMBP mkview commands." >> ${LOGDIR}/${CMBP_LABEL}.cs
+echo "# " >> ${LOGDIR}/${CMBP_LABEL}.cs
+echo "#   mkview -cr <cr-number> -b ${CMBP_LABEL}" >> ${LOGDIR}/${CMBP_LABEL}.cs
+echo "#   mkview -tag <view-name> -b ${CMBP_LABEL}" >> ${LOGDIR}/${CMBP_LABEL}.cs
+echo "# " >> ${LOGDIR}/${CMBP_LABEL}.cs
+cleartool catcs >> ${LOGDIR}/${CMBP_LABEL}.cs
+
+cd ${BUILDDIR}
+
+# V: only reuse derived objects from this view (no winkin)
+# k: keep going if a target fails
+# v: list dependency reason for rebuilt targets
+if [ "$TEST_OPTION" != "test" ]; then
+	echo "Started Nightly build under view ${VIEW} with label ${CMBP_LABEL}." | mail -s "Started Nightly build under view ${VIEW} with label ${CMBP_LABEL}" ${MAILTO}
+fi
+
+case ${SYSTEM_RELEASE} in
+	3.0.1)
+		BUILD_COMMAND=${WMX301_BUILD_COMMAND}
+		;;
+	4.0)
+		if [ "$MAKE_TOOL" == "emake" ]; then
+			BUILD_COMMAND=${WMX40_BUILD_COMMAND_EMAKE}
+		else #clearmake
+			BUILD_COMMAND=${WMX40_BUILD_COMMAND_CLEARMAKE}
+		fi
+		;;
+	5.0|6.0)
+		if [ "$MAKE_TOOL" == "emake" ]; then
+			BUILD_COMMAND=${WMX50_BUILD_COMMAND_EMAKE}
+		else #clearmake
+			BUILD_COMMAND=${WMX50_BUILD_COMMAND_CLEARMAKE}
+		fi
+		;;
+	*)
+		echo "system release ${SYSTEM_RELEASE} is not supported."
+		exit 1
+		;;
+esac
+echo "nohup time ${BUILD_COMMAND} > ${LOGDIR}/${NAME}.log 2>&1"
+nohup time ${BUILD_COMMAND} > ${LOGDIR}/${NAME}.log 2>&1
+#----------------------------------------------------------------------
+# report errors
+
+# find interesting results
+# when this count changes, also update /vob/wuce/wuce/bin/r2bsf1
+r2bsf1 -f ${LOGDIR}/${NAME}.log -p aps | sed '1,/listed by target/d' > ${LOGDIR}/${NAME}.bsf
+BSF_COUNT=`wc -l ${LOGDIR}/${NAME}.bsf|awk '{print $1}'|sed 's% %%g'`
+if [ "${BSF_COUNT}" != "1" ]; then
+  export s="s"
+fi
+
+#----------------------------------------------------------------------
+# report warnings
+
+# find interesting results
+WARNING_COUNT=`warning_count ${LOGDIR}/${NAME}.log|awk '{print $1}'|sed 's% %%g'`
+
+#-----------------------------------
+# compose email in parts
+
+cat > ${LOGDIR}/${NAME}.mail <<EOF
+WUCE Automated Build Error Report
+
+This mail contains information about the DAP Site Controller, DAP Modem,
+Labels for This Build, Build Details, and Build Failures.
+EOF
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+DAP Site Controller
+
+file: ${LOGDIR}/dapsc.tgz
+md5sum: `md5sum ${LOGDIR}/dapsc.tgz |awk '{print $4}'`
+cksum: `cksum ${LOGDIR}/dapsc.tgz |awk '{print $1, $2}'`
+
+Attempted targets:
+EOF
+
+# should eventually parse error log to group these by product and
+# component
+lspcf -P dapsc -t |fmt -w 72 >> ${LOGDIR}/${NAME}.mail
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+DAP Modem
+
+file: ${LOGDIR}/dapmodem.tgz
+md5sum: `md5sum ${LOGDIR}/dapmodem.tgz |awk '{print $4}'`
+cksum: `cksum ${LOGDIR}/dapmodem.tgz |awk '{print $1, $2}'`
+
+Attempted targets:
+EOF
+
+# should eventually parse error log to group these by product and
+# component
+lspcf -P dapmodem -t |fmt -w 72 >> ${LOGDIR}/${NAME}.mail
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+Labels for This Build
+
+CMBP label: ${CMBP_LABEL}
+Use this label in a config spec, to refer to versions used by this
+build.  This label applies to /vob/wibb_bts.
+
+SPB label: ${SPB_LABEL}
+This label is not currently used.
+EOF
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+Build Details
+
+date: `date`
+disk: `cd /mot/proj/wibb_bts; /bin/df -h . |grep "/mot/proj" |awk '{print $3, "remaining,", $4, "full"}'`
+host: `hostname`
+time: `grep elapsed ${LOGDIR}/${NAME}.log |tail -1 |awk '{print $3}' |sed 's%elapsed%%'`
+user: `whoami`
+view: ${VIEW}
+
+Complete build log:
+${LOGDIR}/${NAME}.log
+EOF
+
+if [ "${WARNING_COUNT}" != "0" ]; then
+  echo "Please clean up ${WARNING_COUNT} unique compiler warnings." >> ${LOGDIR}/${NAME}.mail
+fi
+
+#-----------------------------------
+# mail interesting results
+
+if [[ -s ${LOGDIR}/${NAME}.bsf ]]; then
+  echo >> ${LOGDIR}/${NAME}.mail
+  echo "----------------------------------------" >> ${LOGDIR}/${NAME}.mail
+  echo "Build Failures" >> ${LOGDIR}/${NAME}.mail
+  echo >> ${LOGDIR}/${NAME}.mail
+  r2bsf1 -f ${LOGDIR}/${NAME}.log -p aps >> ${LOGDIR}/${NAME}.mail
+fi
+
+mail -s "${CMBP_LABEL}: ${BSF_COUNT} build script failure$s for ${NAME}" ${MAILTO} < ${LOGDIR}/${NAME}.mail
+print
+
+#----------------------------------------------------------------------
+# label build
+if [ "$TEST_OPTION" == "test" ]; then
+	echo "The build log is located at: ${LOGDIR}/${NAME}.log"
+	echo "It is for testing, ignored mklabel step."
+	exit 0
+fi
+
+# begin label types
+cd /vob/wibb_bts
+cleartool mklbtype -c "${NAME}: nightly build label" -global ${CMBP_LABEL} >> ${MKLABEL_LOG}
+# store config spec as prj file
+mkprj -b
+# attach label to latest project file
+REL=`echo ${CMBP_LABEL} |sed 's%_BLD-%_REL-%g;s%\.[0-9][0-9]$%.00%g'`
+cleartool mkattr -nc DevProject \"${CMBP_LABEL}.prj\" lbtype:${CMBP_LABEL}@vob:/vob/wibb_bts
+# end label types
+
+# label current version of build revision file
+cd /vob/wibb_bts
+cleartool mklabel ${CMBP_LABEL} bld/wuce/ver/prodver bld/wuce/ver/bldrev >> ${MKLABEL_LOG} 2>&1
+if [ `echo "$CMBP_LABEL" | grep -c "BLD"` -ne 0 ] && [ `echo "$CMBP_LABEL" | grep -c "R5.0"` -ne 0 ]; then 
+	incprodver dapsc
+else 
+	incbldrev dapsc
+fi
+
+# lock down files so developers can't mess with them
+cd ${LOGDIR}
+chgrp -R wcsm . *
+
+# begin label vobs
+cd /vob/wibb_bts
+cleartool mklabel -recurse -follow ${CMBP_LABEL} . >> ${MKLABEL_LOG} 2>&1
+# end label vobs
+exit 0

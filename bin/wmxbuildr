@@ -1,0 +1,151 @@
+#!/usr/bin/ksh
+## @Author frank.1.liu@nsn.com
+## 
+set -x
+
+PROG_NAME=`basename $0`
+export ORIGDIR=`dirname $0`
+export ABSDIR=`cd ${ORIGDIR} && pwd`
+export COLUMNS=300
+WHOAMI=`whoami`
+
+if [ $# -lt 2 ]; then
+    echo """
+Usage:
+	./${PROG_NAME} {prod} {view} [clearmake|emake] [test] 
+"""
+    exit 1
+fi
+
+export PRODUCT=$1
+if [ -e "$ABSDIR/${PRODUCT}.conf" ]; then
+    . $ABSDIR/${PRODUCT}.conf
+	export DAILY_DIR SMART_BUILD_DIR BUILD_SCRIPT DEFAULT_VOB_FAMILY DEFAULT_PRODUCT_NAME DEFAULT_PRODUCT_COMPONENT VALID_BUILDR
+	export SENDMAIL MAILFROM MAILTO SCMMAIL
+	export CLEARTOOL SED AWK DIFF CMP
+	export CMBP_HOME CMBP_BIN SCSTART
+	export USE_BUILD_PROCESSOR
+	export WMX301_BUILD_COMMAND WMX40_BUILD_COMMAND_CLEARMAKE WMX40_BUILD_COMMAND_EMAKE WMX50_BUILD_COMMAND_CLEARMAKE WMX50_BUILD_COMMAND_EMAKE
+else
+    echo "Product [${prod}] configuration file not found."
+    exit 1
+fi
+export VIEW=$2
+if [[ "$3" == "emake" || "$3" == "clearmake" ]]; then
+	MAKE_TOOL=$3
+else #default to clearmake
+	echo "We only support option {clearmake|emake}"
+	echo "Since no make option given, we will default to clearmake build"
+	MAKE_TOOL="clearmake"
+fi
+export MAKE_TOOL
+
+is_valid_user()
+{
+	for u in [$VALID_BUILDR]; do
+		if [ ${u} == ${WHOAMI} ]; then
+			return true
+		fi
+	done
+	return false
+}
+
+if [ $# -gt 3 ]; then
+	if [[ "$4" == "test" ]]; then
+		export TEST_OPTION="test"
+		echo "The build is for testing..."
+	fi
+else
+	echo "The build is a formal build..."
+fi
+
+if [ ! `is_valid_user` ]; then
+	echo "current user ${WHOAMI} is not a valid user"
+	echo "The build is for testing..."
+	export TEST_OPTION="test"
+fi
+
+sysrel()
+{
+	view=$1
+	builddir=$2
+	${CLEARTOOL} setview -exec "cat ${builddir}/wuce/ver/sysrel" $view
+}
+
+check_label()
+{
+	view=$1
+	clabel=`${CLEARTOOL} setview -exec "/vob/wuce/wuce/bin/cmbp_label $DEFAULT_PRODUCT_COMPONENT" $view`
+	echo "CMBP Label: $clabel"
+	$CLEARTOOL setview -exec "cd /vob/${DEFAULT_VOB_FAMILY}; $CLEARTOOL lstype lbtype:${clabel} 2>&1" $view
+	res=$?
+	if [[ $res == 0 ]]; then
+		echo  "Build was not kicked off because the label $clabel already exists." | ${SENDMAIL} -s "$view : Build was not kicked off." $SCMMAIL
+		exit 1
+	fi
+}
+
+check_branch()
+{
+	view=$1
+	target=$2
+	smartbuilddir=${SMART_BUILD_DIR}/${view}
+	if [ ! -d $smartbuilddir ]; then
+		mkdir $smartbuilddir
+		chmod a+w $smartbuilddir
+		touch $smartbuilddir/prev_cs_$target
+		touch $smartbuilddir/prev_crlog_$target
+	fi
+	# Compare config spec. If identical, exit 0; else non-zero
+	prevcs=$smartbuilddir/prev_cs_$target
+	currcs=$smartbuilddir/curr_cs_$target
+	$CLEARTOOL catcs -tag $view > $currcs
+	${CMP} $prevcs $currcs > /dev/null 2>&1
+	diffcs=$?
+
+	# Compare CR list. If identical, exit 0; else non-zero
+	prevlog=$smartbuilddir/prev_crlog_$target
+	currlog=$smartbuilddir/curr_crlog_$target
+	. ${SCSTART} ${DEFAULT_VOB_FAMILY}
+	. ${SCSTART} ${DEFAULT_VOB_FAMILY}
+	${CLEARTOOL} setview -exec "${CMBP_BIN}/mergestat -a| grep -E '.*yes.*yes.*|.*no.*yes.*' > ${currlog}" $view
+	${CMP} $prevlog $currlog > /dev/null 2>&1
+	diffcr=$?
+
+	# Update the log entry
+	mv $currcs $prevcs
+	mv $currlog $prevlog
+	
+	# If both config spec and merged CR log are unchanged, then exit 0; else, exit 1.
+	if [[ $diffcs == 0 && $diffcr == 0 ]]; then
+		echo "Nightly build under view $view for $target was not kicked off because there's no change to the code or config spec." | ${SENDMAIL} -s "$view: build was not kicked off." $SCMMAIL
+		exit 1
+	fi
+}
+
+logdir=${DAILY_DIR}/log
+if [ ! -d $logdir ]; then
+	mkdir -p $logdir
+	chmod 775 $logdir
+fi
+log="${logdir}/${PROG_NAME}.log"
+touch $log
+echo "-----------------------${PROG_NAME}----------------------" >> $log 2>&1
+echo "start wimax build for product ${DEFAULT_PRODUCT_NAME}" >> $log 2>&1
+date >> $log 2>&1
+if [ "$TEST_OPTION" != "test" ]; then
+	echo "check label..." >> $log 2>&1
+	check_label $VIEW >> $log 2>&1
+	echo "check branch..." >> $log 2>&1
+	check_branch $VIEW $MAKE_OPTION >> $log 2>&1
+else
+	echo "No need check label due to run a test build."
+	echo "No need check branch due to run a test build."
+fi
+echo "kick off build on view ${VIEW} with script ${BUILD_SCRIPT}..." >> $log 2>&1
+echo "${CLEARTOOL} setview -exec \"$BUILD_SCRIPT\ >> $log 2>&1" $VIEW 
+${CLEARTOOL} setview -exec "$BUILD_SCRIPT >>$log 2>&1" $VIEW  
+date >> $log 2>&1
+echo "end wimax build for product ${DEFAULT_PRODUCT_NAME}" >> $log 2>&1
+echo "-----------------------${PROG_NAME}----------------------" >> $log 2>&1
+exit 0

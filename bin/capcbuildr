@@ -1,0 +1,252 @@
+#!/usr/bin/ksh
+# 07-Dec-2010 Modified to use new WMX 5.0 version numbering. Increment the prodver file instead the bldrev.
+# HACK
+set -x
+
+#----------------------------------------------------------------------
+# shell variables
+
+uname -a
+
+# first pass
+export BUILDDIR=/vob/wibb_capc/bld
+export NAME=`basename $0`
+export PATH=/apps/vendor/bin:/usr/bin:/bin:/etc:/sbin:/usr/sbin:/usr/atria/bin:.:/vob/wuce/wuce/bin
+
+# second pass
+if [ "$TEST_OPTION" == "test" ]; then
+  export CMBP_LABEL="`cmbp_label capcsc`.TEST"
+  export BASELINE=`cleartool catcs|grep '^mkbranch'|cut -f2 -d' '`
+  export MAILTO="wibbscm@motorolasolutions.com"
+else
+  export CMBP_LABEL=`cmbp_label capcsc`
+  export BASELINE=`cleartool catcs|grep '^mkbranch'|cut -f2 -d' '`
+  export MAILTO="asngwdev@motorolasolutions.com wibbscm@motorolasolutions.com"
+fi
+
+export EMS_LABEL=`ems_label capcsc`
+export BUNDLE_LABEL=`bundle_label capcsc`
+export SPB_LABEL=`spb_label capcsc`
+export SYSTEM_RELEASE=`cat ${BUILDDIR}/wuce/ver/sysrel`
+export LOGDIR=${DAILY_DIR}/${CMBP_LABEL}
+export VIEW=`cleartool pwv -short`
+
+# third pass
+export CONFIG_SPEC=${LOGDIR}/${CMBP_LABEL}.cs
+export MKLABEL_LOG=${LOGDIR}/${CMBP_LABEL}.mklabel
+
+umask 002
+
+# Jamal would like to delete builds with no changes since the
+# previous build.
+mkdir -p ${LOGDIR}
+touch ${MKLABEL_LOG}
+
+#----------------------------------------------------------------------
+# build software
+
+cleartool setcs -current
+cleartool catcs > ${LOGDIR}/${CMBP_LABEL}.cs
+
+cd ${BUILDDIR}
+
+# V: only reuse derived objects from this view (no winkin)
+# k: keep going if a target fails
+if [ "$TEST_OPTION" != "test" ]; then
+	echo "Started Nightly build under view ${VIEW} with label ${CMBP_LABEL}." | mail -s "Started Nightly build under view ${VIEW} with label ${CMBP_LABEL}. " ${MAILTO}
+fi
+
+case ${SYSTEM_RELEASE} in
+	3.0.1)
+		BUILD_COMMAND=${WMX301_BUILD_COMMAND}
+		;;
+	4.0)
+		if [ "$MAKE_TOOL" == "emake" ]; then
+			BUILD_COMMAND=${WMX40_BUILD_COMMAND_EMAKE}
+		else #clearmake
+			BUILD_COMMAND=${WMX40_BUILD_COMMAND_CLEARMAKE}
+		fi
+		;;
+	5.0|6.0)
+		if [ "$MAKE_TOOL" == "emake" ]; then
+			BUILD_COMMAND=${WMX50_BUILD_COMMAND_EMAKE}
+		else #clearmake
+			BUILD_COMMAND=${WMX50_BUILD_COMMAND_CLEARMAKE}
+		fi
+		;;
+	*)
+		echo "system release ${SYSTEM_RELEASE} is not supported."
+		exit 1
+		;;
+esac
+echo "nohup time ${BUILD_COMMAND} ${BUILD_TARGET} > ${LOGDIR}/${NAME}.log 2>&1"
+nohup time ${BUILD_COMMAND} ${BUILD_TARGET} > ${LOGDIR}/${NAME}.log 2>&1
+
+# what a miserable hack
+# should be done with rel targets
+cd /vob/wibb_capc/bld/pkg
+files=`ls *.rpm |grep ${SPB_LABEL}`
+mv ${files} ${LOGDIR}
+
+if [ -a "/vob/wibb_capc/bld/pkg/capc_package" ]; then
+    cd /vob/wibb_capc/bld/pkg/capc_package
+    files=`ls CAPC_MASTER* |grep ${EMS_LABEL}`
+    mv ${files} ${LOGDIR}
+fi
+
+if [ -a "/vob/wibb_capc/bld/pkg/capcht_package" ]; then
+    cd /vob/wibb_capc/bld/pkg/capcht_package
+    files=`ls HT* |grep ${BUNDLE_LABEL}`
+    mv ${files} ${LOGDIR}
+fi
+
+if [ -a "/vob/wibb_capc/bld/pkg/capclt_package" ]; then
+    cd /vob/wibb_capc/bld/pkg/capclt_package
+    files=`ls LT* |grep ${BUNDLE_LABEL}`
+    mv ${files} ${LOGDIR}
+fi
+
+#if [ -a "/vob/wibb_capc/bld/pkg/capcmt_package" ]; then
+#    cd /vob/wibb_capc/bld/pkg/capcmt_package
+#    files=`ls MT* |grep ${BUNDLE_LABEL}`
+#    mv ${files} ${LOGDIR}
+#fi
+
+#----------------------------------------------------------------------
+# report errors
+
+# find interesting results
+r2bsf1 -p capc -f ${LOGDIR}/*.log > ${LOGDIR}/${NAME}.bsf
+BSF_COUNT=`cat ${LOGDIR}/${NAME}.bsf | grep failure | awk '{print $1}'|sed 's% %%g'`
+if [ "${BSF_COUNT}" != "1" ]; then
+  export s="s"
+fi
+
+#----------------------------------------------------------------------
+# report warnings
+
+# find interesting results
+/mot/proj/wibb_capc/daily/linux/bin/warning_count ${LOGDIR}/${NAME}.log > ${LOGDIR}/${NAME}.bsw
+
+#-----------------------------------
+# compose email in parts
+
+cat > ${LOGDIR}/${NAME}.mail <<EOF
+
+WUCE Automated Build Error Report
+
+This mail contains information about the CAPC System Controller, pCAPC,
+Labels of Included Software, Labels for This Build, Build Details, and
+Build Failures.
+EOF
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+CAPC System Controller and pCAPC
+
+file: ${LOGDIR}/wimax_capc-${SPB_LABEL}-1.ppc.rpm
+md5: `md5sum ${LOGDIR}/wimax_capc-${SPB_LABEL}-1.ppc.rpm |awk '{print $4}'`
+cksum: `cksum ${LOGDIR}/wimax_capc-${SPB_LABEL}-1.ppc.rpm |awk '{print $1, $2}'`
+
+capcsc attempted targets:
+`lspcf -P capcsc -t |fmt -w 72`
+
+pcapc attempted targets:
+`lspcf -P pcapc -t |fmt -w 72`
+EOF
+
+#-----------------------------------
+
+# should eventually parse error log to group these by product and
+# component
+lspcf -P pcapc -t |fmt -w 72 >> ${LOGDIR}/${NAME}.mail
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+Labels for This Build
+
+CMBP label: ${CMBP_LABEL}
+Use this label in a config spec, to refer to versions used by this
+build.  This label applies to /vob/wibb_capc.
+
+SPB label: ${SPB_LABEL}
+This label encodes the version number for RPM packages.
+EOF
+
+#-----------------------------------
+cat >> ${LOGDIR}/${NAME}.mail <<EOF
+
+----------------------------------------
+Build Details
+
+date: `date`
+disk: `cd /mot/proj/wibb_bts2; df -h . |grep "/mot/proj" |awk '{print $3, "remaining,", $4, "full"}'`
+host: `hostname`
+time: `grep "Duration:" ${LOGDIR}/${NAME}.log | awk '{sum += $5;printf"%s mins\n",sum}' | tail -1`
+user: `whoami`
+view: ${VIEW}
+
+Complete build log:
+${LOGDIR}/${NAME}.log
+EOF
+
+#-----------------------------------
+# mail interesting results
+
+if [[ -s ${LOGDIR}/${NAME}.bsf ]]; then
+  echo >> ${LOGDIR}/${NAME}.mail
+  echo "----------------------------------------" >> ${LOGDIR}/${NAME}.mail
+  echo "Build Failures" >> ${LOGDIR}/${NAME}.mail
+  echo >> ${LOGDIR}/${NAME}.mail
+  r2bsf1 -f ${LOGDIR}/${NAME}.log -p capc >> ${LOGDIR}/${NAME}.mail
+fi
+
+if [[ -s ${LOGDIR}/${NAME}.bsw ]]; then
+  echo >> ${LOGDIR}/${NAME}.mail
+  echo "----------------------------------------" >> ${LOGDIR}/${NAME}.mail
+  echo "Warning count (unique) " >> ${LOGDIR}/${NAME}.mail
+  cat ${LOGDIR}/${NAME}.bsw >> ${LOGDIR}/${NAME}.mail
+fi
+
+/bin/mail -s "${CMBP_LABEL}: ${BSF_COUNT} build script failure$s for ${NAME}" ${MAILTO} < ${LOGDIR}/${NAME}.mail
+
+print
+
+#----------------------------------------------------------------------
+# label build
+if [ "$TEST_OPTION" = "test" ]; then
+	echo "The build log is located at: ${LOGDIR}/${NAME}.log"
+	echo "It is for testing, ignored mklabel step."
+	exit 0
+fi
+#Remove the labelling from wuce vob.
+#cd /vob/wuce/wuce
+#cleartool mklbtype -c "${NAME}: nightly build label" ${CMBP_LABEL} > ${MKLABEL_LOG}
+#cleartool mklabel -recurse ${CMBP_LABEL} . >> ${MKLABEL_LOG}
+
+cd /vob/wibb_capc
+cleartool mklbtype -c "${NAME}: nightly build label" ${CMBP_LABEL} >> ${MKLABEL_LOG}
+# attach label to latest project file
+REL=`echo ${CMBP_LABEL} |sed 's%_BLD-%_REL-%g;s%\.[0-9][0-9]$%.00%g'`
+cleartool mkattr -nc DevProject \"${CMBP_LABEL}.prj\" lbtype:${CMBP_LABEL}@vob:/vob/wibb_capc
+cleartool mklabel -recurse ${CMBP_LABEL} . >> ${MKLABEL_LOG}
+
+# lock down files so developers can't mess with them
+cd ${LOGDIR}
+chgrp -R wcsm .
+
+# store config spec as prj file
+mkprj -a
+
+# do this at end of build to set up next build label
+# Increment prodver file for R5.0_BLD, otherwise increment incbldrev
+if [ `echo "$CMBP_LABEL" | grep -c "BLD"` -ne 0 ] && [ `echo "$CMBP_LABEL" | grep -c "R5.0"` -ne 0 ]; then
+        incprodver capcsc;
+else
+        incbldrev capcsc;
+fi
+print
